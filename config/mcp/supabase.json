@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "supabase": {
+      "type": "supabase",
+      "url": "${MCP_SUPABASE_URL}",
+      "anonKey": "${MCP_SUPABASE_ANON_KEY}",
+      "serviceRole": "${MCP_SUPABASE_SERVICE_ROLE}",
+      "projectToken": "${MCP_SUPABASE_PROJECT_TOKEN}",
+      "capabilities": ["query", "edgeFunctions", "storage", "realtime"]
+    }
+  }
+}

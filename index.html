@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zona Azul Digital - Motorista</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .session-active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .session-expired {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        .zone-card {
+            transition: all 0.3s ease;
+        }
+        .zone-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .credit-card {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        .hidden { display: none; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pulse-animation { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .credit-option.selected {
+            border-color: #3b82f6 !important;
+            background-color: #eff6ff !important;
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="glass-effect shadow-lg sticky top-0 z-50">
+        <div class="max-w-md mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                        <i data-feather="car" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-gray-800">Zona Azul</h1>
+                        <p class="text-xs text-gray-600">Digital</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="userBtn" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                        <i data-feather="user" class="w-5 h-5 text-gray-600"></i>
+                    </button>
+                    <button id="logoutBtn" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                        <i data-feather="log-out" class="w-5 h-5 text-gray-600"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Container Principal -->
+    <div class="max-w-md mx-auto px-4 py-6 pb-24">
+        
+        <!-- Tela de Login/Cadastro -->
+        <div id="authScreen" class="hidden">
+            <div class="glass-effect rounded-2xl p-6 mb-6">
+                <div class="text-center mb-6">
+                    <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-feather="car" class="w-10 h-10 text-white"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Zona Azul Digital</h2>
+                    <p class="text-gray-600">Gerencie seu estacionamento digitalmente</p>
+                </div>
+
+                <!-- Formulário de Login -->
+                <div id="loginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="loginEmail" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="seu@email.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                        <input type="password" id="loginPassword" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="••••••••">
+                    </div>
+                    <button type="button" id="doLogin" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                        Entrar
+                    </button>
+                    <div class="text-center">
+                        <button type="button" id="showRegister" class="text-blue-600 hover:text-blue-700 text-sm">
+                            Criar nova conta
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Formulário de Cadastro -->
+                <div id="registerForm" class="hidden space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nome Completo</label>
+                        <input type="text" id="regName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="João Silva">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">CPF</label>
+                        <input type="text" id="regCPF" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="000.000.000-00" maxlength="14">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="regEmail" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="seu@email.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Telefone</label>
+                        <input type="tel" id="regPhone" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="(00) 00000-0000">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                        <input type="password" id="regPassword" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="••••••••">
+                    </div>
+                    <button type="button" id="doRegister" class="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                        Criar Conta
+                    </button>
+                    <div class="text-center">
+                        <button type="button" id="showLogin" class="text-blue-600 hover:text-blue-700 text-sm">
+                            Já tenho conta
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tela Principal do App -->
+        <div id="mainScreen" class="hidden">
+            
+            <!-- Card de Sessão Ativa -->
+            <div id="activeSessionCard" class="hidden session-active rounded-2xl p-6 mb-6 text-white">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Estacionamento Ativo</h3>
+                    <div class="pulse-animation">
+                        <i data-feather="clock" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span>Veículo:</span>
+                        <span id="sessionVehicle" class="font-medium"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Zona:</span>
+                        <span id="sessionZone" class="font-medium"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Tempo Restante:</span>
+                        <span id="sessionTime" class="font-bold text-lg"></span>
+                    </div>
+                </div>
+                <div class="flex space-x-3 mt-4">
+                    <button id="extendSessionBtn" class="flex-1 bg-white bg-opacity-20 text-white py-2 px-4 rounded-lg font-medium hover:bg-opacity-30 transition-colors">
+                        Estender
+                    </button>
+                    <button id="endSessionBtn" class="flex-1 bg-white bg-opacity-20 text-white py-2 px-4 rounded-lg font-medium hover:bg-opacity-30 transition-colors">
+                        Encerrar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card de Saldo -->
+            <div class="credit-card rounded-2xl p-6 mb-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-amber-100 text-sm mb-1">Seus Créditos</p>
+                        <p id="userBalance" class="text-3xl font-bold">R$ 0,00</p>
+                    </div>
+                    <div class="text-right">
+                        <button id="addCreditsBtn" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-opacity-30 transition-colors">
+                            Adicionar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção de Veículos -->
+            <div class="glass-effect rounded-2xl p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">Meus Veículos</h3>
+                    <button id="addVehicleBtn" class="text-blue-600 hover:text-blue-700">
+                        <i data-feather="plus" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div id="vehiclesList" class="space-y-3">
+                    <!-- Veículos serão carregados aqui -->
+                </div>
+            </div>
+
+            <!-- Seção de Zonas -->
+            <div class="glass-effect rounded-2xl p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Zonas Disponíveis</h3>
+                <div id="zonesList" class="space-y-3">
+                    <!-- Zonas serão carregadas aqui -->
+                </div>
+            </div>
+
+            <!-- Botão Estacionar -->
+            <div id="parkButtonContainer" class="hidden">
+                <button id="parkBtn" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-semibold text-lg hover:bg-blue-700 transition-colors shadow-lg">
+                    <i data-feather="navigation" class="w-5 h-5 inline mr-2"></i>
+                    Estacionar Agora
+                </button>
+            </div>
+        </div>
+
+        <!-- Modal de Compra de Créditos -->
+        <div id="creditsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="glass-effect rounded-2xl p-6 w-full max-w-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">Comprar Créditos</h3>
+                    <button id="closeCreditsModal" class="text-gray-400 hover:text-gray-600">
+                        <i data-feather="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Valor</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button class="credit-option p-3 border border-gray-300 rounded-lg text-center hover:border-blue-500 hover:bg-blue-50 transition-colors" data-value="10">
+                                <div class="font-semibold">R$ 10,00</div>
+                                <div class="text-xs text-gray-500">40 min</div>
+                            </button>
+                            <button class="credit-option p-3 border border-gray-300 rounded-lg text-center hover:border-blue-500 hover:bg-blue-50 transition-colors" data-value="25">
+                                <div class="font-semibold">R$ 25,00</div>
+                                <div class="text-xs text-gray-500">1h 40min</div>
+                            </button>
+                            <button class="credit-option p-3 border border-gray-300 rounded-lg text-center hover:border-blue-500 hover:bg-blue-50 transition-colors" data-value="50">
+                                <div class="font-semibold">R$ 50,00</div>
+                                <div class="text-xs text-gray-500">3h 20min</div>
+                            </button>
+                            <button class="credit-option p-3 border border-gray-300 rounded-lg text-center hover:border-blue-500 hover:bg-blue-50 transition-colors" data-value="100">
+                                <div class="font-semibold">R$ 100,00</div>
+                                <div class="text-xs text-gray-500">6h 40min</div>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Forma de Pagamento</label>
+                        <select id="paymentMethod" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="pix">Pix</option>
+                            <option value="card">Cartão de Crédito</option>
+                            <option value="boleto">Boleto Bancário</option>
+                        </select>
+                    </div>
+                    <div class="border-t pt-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="font-medium">Total:</span>
+                            <span id="totalAmount" class="text-xl font-bold text-blue-600">R$ 0,00</span>
+                        </div>
+                        <button id="confirmPurchase" class="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                            Confirmar Compra
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Estacionamento -->
+        <div id="parkingModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="glass-effect rounded-2xl p-6 w-full max-w-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">Estacionar</h3>
+                    <button id="closeParkingModal" class="text-gray-400 hover:text-gray-600">
+                        <i data-feather="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Veículo</label>
+                        <select id="parkingVehicle" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <!-- Veículos serão carregados aqui -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Zona</label>
+                        <select id="parkingZone" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <!-- Zonas serão carregadas aqui -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tempo</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button class="time-option p-2 border border-gray-300 rounded-lg text-center hover:border-blue-500 hover:bg-blue-50 transition-colors" data-minutes="30">30min</button>
+                            <button class="time-option p-2 border border-gray-300 rounded-lg text-center hover:border-blue-500 hover:bg-blue-50 transition-colors" data-minutes="60">1h</button>
+                            <button class="time-option p-2 border border-gray-300 rounded-lg text-center hover:border-blue-500 hover:bg-blue-50 transition-colors" data-minutes="120">2h</button>
+                            <button class="time-option p-2 border border-gray-300 rounded-lg text-center hover:border-blue-500 hover:bg-blue-50 transition-colors" data-minutes="180">3h</button>
+                            <button class="time-option p-2 border border-gray-300 rounded-lg text-center hover:border-blue-500 hover:bg-blue-50 transition-colors" data-minutes="240">4h</button>
+                            <input type="number" id="customMinutes" class="p-2 border border-gray-300 rounded-lg text-center" placeholder="min" min="15" max="240">
+                        </div>
+                    </div>
+                    <div class="border-t pt-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="font-medium">Custo Estimado:</span>
+                            <span id="estimatedCost" class="text-xl font-bold text-blue-600">R$ 0,00</span>
+                        </div>
+                        <button id="confirmParking" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                            Confirmar Estacionamento
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Veículos -->
+        <div id="vehicleModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="glass-effect rounded-2xl p-6 w-full max-w-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">Adicionar Veículo</h3>
+                    <button id="closeVehicleModal" class="text-gray-400 hover:text-gray-600">
+                        <i data-feather="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Placa</label>
+                        <input type="text" id="vehiclePlate" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ABC1D23" maxlength="7">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Marca</label>
+                        <input type="text" id="vehicleBrand" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Volkswagen">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Modelo</label>
+                        <input type="text" id="vehicleModel" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Gol">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cor</label>
+                        <input type="text" id="vehicleColor" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Prata">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Ano</label>
+                        <input type="number" id="vehicleYear" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="2020" min="1900" max="2025">
+                    </div>
+                    <button id="saveVehicle" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                        Salvar Veículo
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notificações -->
+        <div id="notification" class="hidden fixed top-20 left-4 right-4 z-50">
+            <div class="glass-effect rounded-lg p-4 shadow-lg">
+                <div class="flex items-center">
+                    <i id="notificationIcon" class="w-6 h-6 mr-3"></i>
+                    <span id="notificationMessage" class="text-gray-800"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 glass-effect border-t border-gray-200 z-40">
+        <div class="max-w-md mx-auto px-4 py-2">
+            <div class="flex justify-around">
+                <button class="nav-btn flex flex-col items-center py-2 px-3 text-blue-600">
+                    <i data-feather="home" class="w-6 h-6 mb-1"></i>
+                    <span class="text-xs">Início</span>
+                </button>
+                <button id="historyBtn" class="nav-btn flex flex-col items-center py-2 px-3 text-gray-400 hover:text-gray-600">
+                    <i data-feather="clock" class="w-6 h-6 mb-1"></i>
+                    <span class="text-xs">Histórico</span>
+                </button>
+                <button id="profileBtn" class="nav-btn flex flex-col items-center py-2 px-3 text-gray-400 hover:text-gray-600">
+                    <i data-feather="user" class="w-6 h-6 mb-1"></i>
+                    <span class="text-xs">Perfil</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <script src="main.js"></script>
+    <script>
+        console.log('Index.html script loaded');
+        
+        // Inicializar aplicação quando DOM carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded');
+            try {
+                initializeApp();
+                setupEventListeners();
+                checkAuthState();
+                
+                // Inicializar ícones Feather
+                feather.replace();
+                console.log('Feather icons initialized');
+            } catch (error) {
+                console.error('Error during initialization:', error);
+            }
+        });
+
+        function setupEventListeners() {
+            // Auth
+            document.getElementById('showRegister').addEventListener('click', showRegisterForm);
+            document.getElementById('showLogin').addEventListener('click', showLoginForm);
+            document.getElementById('doLogin').addEventListener('click', handleLogin);
+            document.getElementById('doRegister').addEventListener('click', handleRegister);
+            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+
+            // Créditos
+            document.getElementById('addCreditsBtn').addEventListener('click', showCreditsModal);
+            document.getElementById('closeCreditsModal').addEventListener('click', hideCreditsModal);
+            
+            // Configurar event listeners para botões de crédito com delegação de eventos
+            const creditsModal = document.getElementById('creditsModal');
+            if (creditsModal) {
+                creditsModal.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('credit-option')) {
+                        selectCreditAmount(e);
+                    }
+                });
+            } else {
+                // Fallback: usar querySelectorAll se delegação não funcionar
+                document.querySelectorAll('.credit-option').forEach(btn => {
+                    btn.addEventListener('click', selectCreditAmount);
+                });
+            }
+            
+            document.getElementById('confirmPurchase').addEventListener('click', handlePurchase);
+
+            // Veículos
+            document.getElementById('addVehicleBtn').addEventListener('click', showVehicleModal);
+            document.getElementById('closeVehicleModal').addEventListener('click', hideVehicleModal);
+            document.getElementById('saveVehicle').addEventListener('click', handleSaveVehicle);
+
+            // Estacionamento
+            document.getElementById('parkBtn').addEventListener('click', showParkingModal);
+            document.getElementById('closeParkingModal').addEventListener('click', hideParkingModal);
+            document.querySelectorAll('.time-option').forEach(btn => {
+                btn.addEventListener('click', selectParkingTime);
+            });
+            document.getElementById('customMinutes').addEventListener('input', calculateEstimatedCost);
+            document.getElementById('parkingZone').addEventListener('change', calculateEstimatedCost);
+            document.getElementById('confirmParking').addEventListener('click', handleStartParking);
+
+            // Sessão ativa
+            document.getElementById('extendSessionBtn').addEventListener('click', handleExtendSession);
+            document.getElementById('endSessionBtn').addEventListener('click', handleEndSession);
+
+            // Formatação de campos
+            document.getElementById('regCPF').addEventListener('input', formatCPF);
+            document.getElementById('regPhone').addEventListener('input', formatPhone);
+            document.getElementById('vehiclePlate').addEventListener('input', formatPlate);
+        }
+
+        function checkAuthState() {
+            console.log('Checking auth state...');
+            console.log('AppState.currentUser:', AppState.currentUser);
+            
+            if (AppState.currentUser) {
+                console.log('User authenticated:', AppState.currentUser);
+                showMainScreen();
+                loadUserData();
+            } else {
+                console.log('No user authenticated, showing auth screen');
+                showAuthScreen();
+            }
+        }
+
+        function showAuthScreen() {
+            console.log('Showing auth screen');
+            const authScreen = document.getElementById('authScreen');
+            const mainScreen = document.getElementById('mainScreen');
+            
+            console.log('Auth screen element:', authScreen);
+            console.log('Main screen element:', mainScreen);
+            
+            if (authScreen) {
+                authScreen.classList.remove('hidden');
+            } else {
+                console.error('Auth screen element not found!');
+            }
+            
+            if (mainScreen) {
+                mainScreen.classList.add('hidden');
+            }
+            
+            showLoginForm();
+        }
+
+        function showMainScreen() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('mainScreen').classList.remove('hidden');
+            updateUserInterface();
+        }
+
+        function showLoginForm() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+        }
+
+        function showRegisterForm() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                showNotification('Preencha todos os campos', 'error');
+                return;
+            }
+
+            try {
+                await AuthService.login(email, password);
+                showMainScreen();
+                loadUserData();
+                showNotification('Login realizado com sucesso!', 'success');
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function handleRegister() {
+            const name = document.getElementById('regName').value;
+            const cpf = document.getElementById('regCPF').value;
+            const email = document.getElementById('regEmail').value;
+            const phone = document.getElementById('regPhone').value;
+            const password = document.getElementById('regPassword').value;
+
+            if (!name || !cpf || !email || !phone || !password) {
+                showNotification('Preencha todos os campos', 'error');
+                return;
+            }
+
+            try {
+                await AuthService.register({
+                    nome: name,
+                    cpf: cpf.replace(/[^\d]/g, ''),
+                    email: email,
+                    telefone: phone,
+                    senha: password
+                });
+                showMainScreen();
+                loadUserData();
+                showNotification('Conta criada com sucesso!', 'success');
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        function handleLogout() {
+            AuthService.logout();
+            showAuthScreen();
+            showNotification('Logout realizado', 'info');
+        }
+
+        function loadUserData() {
+            if (!AppState.currentUser) return;
+
+            // Atualizar saldo
+            document.getElementById('userBalance').textContent = formatCurrency(AppState.currentUser.saldo_creditos);
+
+            // Carregar veículos
+            loadVehicles();
+
+            // Carregar zonas
+            loadZones();
+
+            // Verificar sessão ativa
+            checkActiveSession();
+
+            // Atualizar sessão ativa
+            AppState.activeSession = ParkingService.getActiveSession();
+            updateActiveSessionDisplay();
+        }
+
+        function loadVehicles() {
+            const vehicles = VehicleService.getUserVehicles();
+            const vehiclesList = document.getElementById('vehiclesList');
+            const parkingVehicleSelect = document.getElementById('parkingVehicle');
+
+            vehiclesList.innerHTML = '';
+            parkingVehicleSelect.innerHTML = '';
+
+            if (vehicles.length === 0) {
+                vehiclesList.innerHTML = '<p class="text-gray-500 text-sm">Nenhum veículo cadastrado</p>';
+            } else {
+                vehicles.forEach(vehicle => {
+                    // Adicionar à lista
+                    const vehicleCard = document.createElement('div');
+                    vehicleCard.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+                    vehicleCard.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i data-feather="car" class="w-5 h-5 text-blue-600"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800">${vehicle.placa}</p>
+                                <p class="text-sm text-gray-600">${vehicle.marca} ${vehicle.modelo}</p>
+                            </div>
+                        </div>
+                        <button onclick="deleteVehicle('${vehicle.id}')" class="text-red-500 hover:text-red-700">
+                            <i data-feather="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    `;
+                    vehiclesList.appendChild(vehicleCard);
+
+                    // Adicionar ao select
+                    const option = document.createElement('option');
+                    option.value = vehicle.id;
+                    option.textContent = `${vehicle.placa} - ${vehicle.marca} ${vehicle.modelo}`;
+                    parkingVehicleSelect.appendChild(option);
+                });
+            }
+
+            feather.replace();
+        }
+
+        function loadZones() {
+            const zonesList = document.getElementById('zonesList');
+            const parkingZoneSelect = document.getElementById('parkingZone');
+
+            zonesList.innerHTML = '';
+            parkingZoneSelect.innerHTML = '';
+
+            AppState.zones.forEach(zone => {
+                // Adicionar à lista
+                const zoneCard = document.createElement('div');
+                zoneCard.className = 'zone-card p-4 bg-gray-50 rounded-lg cursor-pointer';
+                zoneCard.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-semibold text-gray-800">${zone.nome}</h4>
+                        <span class="text-green-600 font-bold">${formatCurrency(zone.valor_hora)}/h</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">${zone.localizacao}</p>
+                    <div class="flex items-center justify-between text-xs text-gray-500">
+                        <span>${zone.horario_inicio} - ${zone.horario_fim}</span>
+                        <span>${zone.vagas} vagas</span>
+                    </div>
+                `;
+                zonesList.appendChild(zoneCard);
+
+                // Adicionar ao select
+                const option = document.createElement('option');
+                option.value = zone.id;
+                option.textContent = `${zone.nome} - ${formatCurrency(zone.valor_hora)}/h`;
+                parkingZoneSelect.appendChild(option);
+            });
+        }
+
+        function checkActiveSession() {
+            const activeSession = ParkingService.getActiveSession();
+            const parkButtonContainer = document.getElementById('parkButtonContainer');
+            const activeSessionCard = document.getElementById('activeSessionCard');
+
+            if (activeSession) {
+                AppState.activeSession = activeSession;
+                activeSessionCard.classList.remove('hidden');
+                parkButtonContainer.classList.add('hidden');
+                updateActiveSessionDisplay();
+            } else {
+                activeSessionCard.classList.add('hidden');
+                parkButtonContainer.classList.remove('hidden');
+            }
+        }
+
+        function updateActiveSessionDisplay() {
+            if (!AppState.activeSession) return;
+
+            const session = AppState.activeSession;
+            const vehicle = db.getById('vehicles', session.vehicle_id);
+            const zone = db.getById('zones', session.zone_id);
+
+            if (vehicle && zone) {
+                document.getElementById('sessionVehicle').textContent = vehicle.placa;
+                document.getElementById('sessionZone').textContent = zone.nome;
+                
+                // Calcular tempo restante
+                const now = new Date();
+                const endTime = new Date(session.tempo_fim);
+                const timeRemaining = Math.max(0, Math.floor((endTime - now) / (1000 * 60)));
+                
+                document.getElementById('sessionTime').textContent = formatTime(timeRemaining);
+                
+                // Atualizar a cada segundo
+                if (window.sessionUpdateInterval) {
+                    clearInterval(window.sessionUpdateInterval);
+                }
+                
+                window.sessionUpdateInterval = setInterval(() => {
+                    const now = new Date();
+                    const endTime = new Date(session.tempo_fim);
+                    const timeRemaining = Math.max(0, Math.floor((endTime - now) / (1000 * 60)));
+                    
+                    document.getElementById('sessionTime').textContent = formatTime(timeRemaining);
+                    
+                    if (timeRemaining === 0) {
+                        clearInterval(window.sessionUpdateInterval);
+                        checkActiveSession();
+                    }
+                }, 1000);
+            }
+        }
+
+        // Funções de modal
+        function showCreditsModal() {
+            document.getElementById('creditsModal').classList.remove('hidden');
+        }
+
+        function hideCreditsModal() {
+            document.getElementById('creditsModal').classList.add('hidden');
+        }
+
+        function selectCreditAmount(e) {
+            // Remover seleção de todos os botões
+            document.querySelectorAll('.credit-option').forEach(btn => {
+                btn.classList.remove('selected', 'border-blue-500', 'bg-blue-50');
+            });
+            
+            // Adicionar seleção ao botão clicado
+            e.target.classList.add('selected', 'border-blue-500', 'bg-blue-50');
+            
+            // Obter valor e atualizar total
+            const value = parseFloat(e.target.dataset.value);
+            document.getElementById('totalAmount').textContent = formatCurrency(value);
+            
+            // Log para debug
+            console.log('Credit amount selected:', value);
+        }
+
+        async function handlePurchase() {
+            const selectedOption = document.querySelector('.credit-option.border-blue-500');
+            if (!selectedOption) {
+                showNotification('Selecione um valor', 'error');
+                return;
+            }
+
+            const amount = parseFloat(selectedOption.dataset.value);
+            const paymentMethod = document.getElementById('paymentMethod').value;
+
+            try {
+                await PaymentService.purchaseCredits(amount, paymentMethod);
+                hideCreditsModal();
+                loadUserData();
+                showNotification('Créditos adicionados com sucesso!', 'success');
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        function showVehicleModal() {
+            document.getElementById('vehicleModal').classList.remove('hidden');
+        }
+
+        function hideVehicleModal() {
+            document.getElementById('vehicleModal').classList.add('hidden');
+            clearVehicleForm();
+        }
+
+        async function handleSaveVehicle() {
+            const plate = document.getElementById('vehiclePlate').value;
+            const brand = document.getElementById('vehicleBrand').value;
+            const model = document.getElementById('vehicleModel').value;
+            const color = document.getElementById('vehicleColor').value;
+            const year = document.getElementById('vehicleYear').value;
+
+            if (!plate || !brand || !model || !color || !year) {
+                showNotification('Preencha todos os campos', 'error');
+                return;
+            }
+
+            try {
+                await VehicleService.registerVehicle({
+                    placa: plate,
+                    marca: brand,
+                    modelo: model,
+                    cor: color,
+                    ano: parseInt(year)
+                });
+                
+                hideVehicleModal();
+                loadUserData();
+                showNotification('Veículo cadastrado com sucesso!', 'success');
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        function clearVehicleForm() {
+            document.getElementById('vehiclePlate').value = '';
+            document.getElementById('vehicleBrand').value = '';
+            document.getElementById('vehicleModel').value = '';
+            document.getElementById('vehicleColor').value = '';
+            document.getElementById('vehicleYear').value = '';
+        }
+
+        async function deleteVehicle(vehicleId) {
+            if (confirm('Tem certeza que deseja excluir este veículo?')) {
+                try {
+                    await VehicleService.deleteVehicle(vehicleId);
+                    loadUserData();
+                    showNotification('Veículo removido com sucesso!', 'success');
+                } catch (error) {
+                    showNotification(error.message, 'error');
+                }
+            }
+        }
+
+        function showParkingModal() {
+            if (VehicleService.getUserVehicles().length === 0) {
+                showNotification('Cadastre um veículo primeiro', 'error');
+                return;
+            }
+            
+            document.getElementById('parkingModal').classList.remove('hidden');
+            calculateEstimatedCost();
+        }
+
+        function hideParkingModal() {
+            document.getElementById('parkingModal').classList.add('hidden');
+            document.querySelectorAll('.time-option').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'bg-blue-50');
+            });
+            document.getElementById('customMinutes').value = '';
+        }
+
+        function selectParkingTime(e) {
+            document.querySelectorAll('.time-option').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'bg-blue-50');
+            });
+            
+            e.target.classList.add('border-blue-500', 'bg-blue-50');
+            document.getElementById('customMinutes').value = '';
+            calculateEstimatedCost();
+        }
+
+        function calculateEstimatedCost() {
+            const selectedTime = document.querySelector('.time-option.border-blue-500');
+            const customMinutes = document.getElementById('customMinutes').value;
+            const zoneId = document.getElementById('parkingZone').value;
+            
+            let minutes = 0;
+            if (customMinutes) {
+                minutes = parseInt(customMinutes);
+            } else if (selectedTime) {
+                minutes = parseInt(selectedTime.dataset.minutes);
+            }
+            
+            if (minutes > 0 && zoneId) {
+                const zone = db.getById('zones', zoneId);
+                if (zone) {
+                    const hours = Math.ceil(minutes / 60);
+                    const cost = hours * zone.valor_hora;
+                    document.getElementById('estimatedCost').textContent = formatCurrency(cost);
+                }
+            }
+        }
+
+        async function handleStartParking() {
+            const vehicleId = document.getElementById('parkingVehicle').value;
+            const zoneId = document.getElementById('parkingZone').value;
+            const selectedTime = document.querySelector('.time-option.border-blue-500');
+            const customMinutes = document.getElementById('customMinutes').value;
+            
+            let durationMinutes = 0;
+            if (customMinutes) {
+                durationMinutes = parseInt(customMinutes);
+            } else if (selectedTime) {
+                durationMinutes = parseInt(selectedTime.dataset.minutes);
+            }
+            
+            if (!vehicleId || !zoneId || durationMinutes === 0) {
+                showNotification('Preencha todos os campos', 'error');
+                return;
+            }
+
+            try {
+                await ParkingService.startParking(zoneId, vehicleId, durationMinutes);
+                hideParkingModal();
+                loadUserData();
+                showNotification('Estacionamento iniciado!', 'success');
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function handleExtendSession() {
+            if (!AppState.activeSession) return;
+            
+            const additionalMinutes = prompt('Quantos minutos deseja adicionar?', '30');
+            if (!additionalMinutes || isNaN(additionalMinutes)) return;
+            
+            try {
+                await ParkingService.extendParking(AppState.activeSession.id, parseInt(additionalMinutes));
+                loadUserData();
+                showNotification('Tempo estendido com sucesso!', 'success');
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function handleEndSession() {
+            if (!AppState.activeSession) return;
+            
+            if (confirm('Tem certeza que deseja encerrar o estacionamento?')) {
+                try {
+                    await ParkingService.endParking(AppState.activeSession.id);
+                    loadUserData();
+                    showNotification('Estacionamento encerrado!', 'success');
+                } catch (error) {
+                    showNotification(error.message, 'error');
+                }
+            }
+        }
+
+        // Funções auxiliares
+        function formatCPF(e) {
+            let value = e.target.value.replace(/[^\d]/g, '');
+            if (value.length > 9) {
+                value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            } else if (value.length > 6) {
+                value = value.replace(/(\d{3})(\d{3})(\d{3})/, '$1.$2.$3');
+            } else if (value.length > 3) {
+                value = value.replace(/(\d{3})(\d{3})/, '$1.$2');
+            }
+            e.target.value = value;
+        }
+
+        function formatPhone(e) {
+            let value = e.target.value.replace(/[^\d]/g, '');
+            if (value.length > 10) {
+                value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+            } else if (value.length > 6) {
+                value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+            } else if (value.length > 5) {
+                value = value.replace(/(\d{2})(\d{4})/, '($1) $2-');
+            } else if (value.length > 2) {
+                value = value.replace(/(\d{2})(\d)/, '($1) $2');
+            }
+            e.target.value = value;
+        }
+
+        function formatPlate(e) {
+            let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            if (value.length > 3) {
+                value = value.replace(/([A-Z]{3})([0-9A-Z])/, '$1-$2');
+            }
+            e.target.value = value;
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const icon = document.getElementById('notificationIcon');
+            const messageEl = document.getElementById('notificationMessage');
+            
+            // Configurar ícone e cor
+            const icons = {
+                success: 'check-circle text-green-5

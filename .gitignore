@@ -1,0 +1,10 @@
+docs/credenciais.md
+.env
+.env.*
+supabase/.env
+apps/**/.env*
+server/**/.env*
+*.key
+*.pem
+*.cert
+**/credentials.*

@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zona Azul Digital - Fiscal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            min-height: 100vh;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .valid-status {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .invalid-status {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        .warning-status {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        .fiscal-card {
+            transition: all 0.3s ease;
+        }
+        .fiscal-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .scanner-animation {
+            animation: scan 2s infinite;
+        }
+        @keyframes scan {
+            0%, 100% { transform: translateY(0); opacity: 1; }
+            50% { transform: translateY(-10px); opacity: 0.7; }
+        }
+        .hidden { display: none; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="bg-slate-800 shadow-lg">
+        <div class="max-w-md mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center">
+                        <i data-feather="shield" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-white">Fiscal ZA</h1>
+                        <p class="text-xs text-slate-300">Zona Azul Digital</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="syncBtn" class="p-2 rounded-full hover:bg-slate-700 transition-colors">
+                        <i data-feather="refresh-cw" class="w-5 h-5 text-white"></i>
+                    </button>
+                    <button id="logoutBtn" class="p-2 rounded-full hover:bg-slate-700 transition-colors">
+                        <i data-feather="log-out" class="w-5 h-5 text-white"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Container Principal -->
+    <div class="max-w-md mx-auto px-4 py-6 pb-24">
+        
+        <!-- Tela de Login -->
+        <div id="loginScreen" class="hidden">
+            <div class="glass-effect rounded-2xl p-6 mb-6">
+                <div class="text-center mb-6">
+                    <div class="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-feather="shield" class="w-10 h-10 text-white"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Fiscal Zona Azul</h2>
+                    <p class="text-gray-600">Sistema de fiscalização digital</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">CPF</label>
+                        <input type="text" id="fiscalCPF" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="000.000.000-00" maxlength="14">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                        <input type="password" id="fiscalPassword" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="••••••••">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Token</label>
+                        <input type="text" id="fiscalToken" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="Código de acesso">
+                    </div>
+                    <button type="button" id="doFiscalLogin" class="w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">
+                        Acessar Sistema
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tela Principal do Fiscal -->
+        <div id="mainFiscalScreen" class="hidden">
+            
+            <!-- Scanner de Placas -->
+            <div class="glass-effect rounded-2xl p-6 mb-6">
+                <div class="text-center mb-6">
+                    <div class="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 scanner-animation">
+                        <i data-feather="camera" class="w-12 h-12 text-slate-600"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Verificar Veículo</h3>
+                    <p class="text-gray-600 text-sm mb-4">Escaneie a placa ou digite manualmente</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Placa do Veículo</label>
+                        <input type="text" id="plateInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent font-mono text-lg tracking-wider" placeholder="ABC1D23" maxlength="8">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Zona (opcional)</label>
+                        <select id="zoneSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <option value="">Selecionar zona...</option>
+                            <!-- Zonas serão carregadas aqui -->
+                        </select>
+                    </div>
+                    <button id="checkVehicleBtn" class="w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">
+                        <i data-feather="search" class="w-5 h-5 inline mr-2"></i>
+                        Verificar Veículo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Resultado da Verificação -->
+            <div id="verificationResult" class="hidden">
+                <!-- Resultado será exibido aqui -->
+            </div>
+
+            <!-- Estatísticas do Dia -->
+            <div class="glass-effect rounded-2xl p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Estatísticas do Dia</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="text-center p-3 bg-green-50 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600" id="validChecks">0</div>
+                        <div class="text-sm text-green-700">Verificações Válidas</div>
+                    </div>
+                    <div class="text-center p-3 bg-red-50 rounded-lg">
+                        <div class="text-2xl font-bold text-red-600" id="invalidChecks">0</div>
+                        <div class="text-sm text-red-700">Infrações</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Histórico Recente -->
+            <div class="glass-effect rounded-2xl p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Verificações Recentes</h3>
+                <div id="recentChecks" class="space-y-3">
+                    <!-- Histórico será carregado aqui -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Multa -->
+        <div id="penaltyModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="glass-effect rounded-2xl p-6 w-full max-w-sm">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-feather="alert-triangle" class="w-8 h-8 text-red-600"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800">Aplicar Multa</h3>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Motivo</label>
+                        <select id="penaltyReason" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <option value="Estacionamento irregular">Estacionamento irregular</option>
+                            <option value="Sessão expirada">Sessão expirada</option>
+                            <option value="Zona incorreta">Zona incorreta</option>
+                            <option value="Veículo não cadastrado">Veículo não cadastrado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Valor da Multa</label>
+                        <input type="text" id="penaltyAmount" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50" value="R$ 50,00" readonly>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button id="cancelPenalty" class="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-400 transition-colors">
+                            Cancelar
+                        </button>
+                        <button id="confirmPenalty" class="flex-1 bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">
+                            Aplicar Multa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notificações -->
+        <div id="notification" class="hidden fixed top-20 left-4 right-4 z-50">
+            <div class="glass-effect rounded-lg p-4 shadow-lg">
+                <div class="flex items-center">
+                    <i id="notificationIcon" class="w-6 h-6 mr-3"></i>
+                    <span id="notificationMessage" class="text-gray-800"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 z-40">
+        <div class="max-w-md mx-auto px-4 py-2">
+            <div class="flex justify-around">
+                <button class="nav-btn flex flex-col items-center py-2 px-3 text-red-400">
+                    <i data-feather="shield" class="w-6 h-6 mb-1"></i>
+                    <span class="text-xs">Fiscalizar</span>
+                </button>
+                <button id="statsBtn" class="nav-btn flex flex-col items-center py-2 px-3 text-slate-400 hover:text-slate-300">
+                    <i data-feather="bar-chart-2" class="w-6 h-6 mb-1"></i>
+                    <span class="text-xs">Estatísticas</span>
+                </button>
+                <button id="profileBtn" class="nav-btn flex flex-col items-center py-2 px-3 text-slate-400 hover:text-slate-300">
+                    <i data-feather="user" class="w-6 h-6 mb-1"></i>
+                    <span class="text-xs">Perfil</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <script src="main.js"></script>
+    <script>
+        // Estado específico do fiscal
+        let fiscalState = {
+            dailyStats: {
+                validChecks: 0,
+                invalidChecks: 0,
+                recentChecks: []
+            }
+        };
+
+        // Inicializar aplicação quando DOM carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeFiscalApp();
+            setupFiscalEventListeners();
+            checkFiscalAuthState();
+            
+            // Inicializar ícones Feather
+            feather.replace();
+        });
+
+        function initializeFiscalApp() {
+            // Carregar dados do fiscal se autenticado
+            if (AppState.currentUser && AppState.currentUser.tipo === 'fiscal') {
+                loadFiscalData();
+            }
+        }
+
+        function setupFiscalEventListeners() {
+            // Auth
+            document.getElementById('doFiscalLogin').addEventListener('click', handleFiscalLogin);
+            document.getElementById('logoutBtn').addEventListener('click', handleFiscalLogout);
+
+            // Verificação
+            document.getElementById('checkVehicleBtn').addEventListener('click', handleVehicleCheck);
+            document.getElementById('plateInput').addEventListener('input', formatPlate);
+
+            // Multa
+            document.getElementById('confirmPenalty').addEventListener('click', handleApplyPenalty);
+            document.getElementById('cancelPenalty').addEventListener('click', hidePenaltyModal);
+
+            // Sincronização
+            document.getElementById('syncBtn').addEventListener('click', handleSync);
+        }
+
+        function checkFiscalAuthState() {
+            if (AppState.currentUser && AppState.currentUser.tipo === 'fiscal') {
+                showMainFiscalScreen();
+                loadFiscalData();
+            } else {
+                showFiscalLoginScreen();
+            }
+        }
+
+        function showFiscalLoginScreen() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainFiscalScreen').classList.add('hidden');
+        }
+
+        function showMainFiscalScreen() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainFiscalScreen').classList.remove('hidden');
+            loadZonesForFiscal();
+        }
+
+        async function handleFiscalLogin() {
+            const cpf = document.getElementById('fiscalCPF').value;
+            const password = document.getElementById('fiscalPassword').value;
+            const token = document.getElementById('fiscalToken').value;
+
+            if (!cpf || !password || !token) {
+                showNotification('Preencha todos os campos', 'error');
+                return;
+            }
+
+            // Para demo, vamos criar um usuário fiscal se não existir
+            let fiscalUser = db.findUserByCPF(cpf.replace(/[^\d]/g, ''));
+            
+            if (!fiscalUser) {
+                // Criar usuário fiscal de demonstração
+                fiscalUser = db.create('users', {
+                    nome: 'Fiscal Demo',
+                    cpf: cpf.replace(/[^\d]/g, ''),
+                    email: `fiscal.${cpf.replace(/[^\d]/g, '')}@demo.com`,
+                    telefone: '(00) 00000-0000',
+                    senha: password,
+                    saldo_creditos: 0,
+                    tipo: 'fiscal'
+                });
+            }
+
+            // Verificar credenciais
+            if (fiscalUser.senha !== password) {
+                showNotification('Credenciais inválidas', 'error');
+                return;
+            }
+
+            // Criar sessão
+            AuthService.createSession(fiscalUser);
+            showMainFiscalScreen();
+            loadFiscalData();
+            showNotification('Login realizado com sucesso!', 'success');
+        }
+
+        function handleFiscalLogout() {
+            AuthService.logout();
+            showFiscalLoginScreen();
+            showNotification('Logout realizado', 'info');
+        }
+
+        function loadZonesForFiscal() {
+            const zoneSelect = document.getElementById('zoneSelect');
+            zoneSelect.innerHTML = '<option value="">Selecionar zona...</option>';
+            
+            AppState.zones.forEach(zone => {
+                const option = document.createElement('option');
+                option.value = zone.id;
+                option.textContent = `${zone.nome} - ${formatCurrency(zone.valor_hora)}/h`;
+                zoneSelect.appendChild(option);
+            });
+        }
+
+        function loadFiscalData() {
+            updateDailyStats();
+            loadRecentChecks();
+        }
+
+        function updateDailyStats() {
+            document.getElementById('validChecks').textContent = fiscalState.dailyStats.validChecks;
+            document.getElementById('invalidChecks').textContent = fiscalState.dailyStats.invalidChecks;
+        }
+
+        function loadRecentChecks() {
+            const recentChecksContainer = document.getElementById('recentChecks');
+            
+            if (fiscalState.dailyStats.recentChecks.length === 0) {
+                recentChecksContainer.innerHTML = '<p class="text-gray-500 text-sm text-center">Nenhuma verificação ainda hoje</p>';
+                return;
+            }
+
+            recentChecksContainer.innerHTML = '';
+            
+            fiscalState.dailyStats.recentChecks.slice(0, 5).forEach(check => {
+                const checkCard = document.createElement('div');
+                checkCard.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+                
+                const statusColor = check.status === 'valid' ? 'text-green-600' : 'text-red-600';
+                const statusIcon = check.status === 'valid' ? 'check-circle' : 'x-circle';
+                
+                checkCard.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <i data-feather="${statusIcon}" class="w-5 h-5 ${statusColor}"></i>
+                        <div>
+                            <p class="font-medium text-gray-800">${check.plate}</p>
+                            <p class="text-sm text-gray-600">${check.time}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs ${statusColor} font-medium">${check.status === 'valid' ? 'VÁLIDO' : 'INVÁLIDO'}</span>
+                    </div>
+                `;
+                
+                recentChecksContainer.appendChild(checkCard);
+            });
+
+            feather.replace();
+        }
+
+        async function handleVehicleCheck() {
+            const plate = document.getElementById('plateInput').value;
+            const zoneId = document.getElementById('zoneSelect').value;
+
+            if (!plate) {
+                showNotification('Digite a placa do veículo', 'error');
+                return;
+            }
+
+            try {
+                const result = await EnforcementService.checkVehicle(plate, zoneId);
+                displayVerificationResult(result, plate);
+                
+                // Adicionar ao histórico
+                const checkRecord = {
+                    plate: plate,
+                    status: result.status === 'valid' ? 'valid' : 'invalid',
+                    time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                    timestamp: new Date()
+                };
+                
+                fiscalState.dailyStats.recentChecks.unshift(checkRecord);
+                
+                // Atualizar estatísticas
+                if (result.status === 'valid') {
+                    fiscalState.dailyStats.validChecks++;
+                } else {
+                    fiscalState.dailyStats.invalidChecks++;
+                }
+                
+                updateDailyStats();
+                loadRecentChecks();
+                
+                // Limpar campo
+                document.getElementById('plateInput').value = '';
+                
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        function displayVerificationResult(result, plate) {
+            const resultContainer = document.getElementById('verificationResult');
+            resultContainer.innerHTML = '';
+            resultContainer.classList.remove('hidden');
+
+            let statusClass, statusIcon, statusText, statusColor;
+            
+            switch (result.status) {
+                case 'valid':
+                    statusClass = 'valid-status';
+                    statusIcon = 'check-circle';
+                    statusText = 'ESTACIONAMENTO VÁLIDO';
+                    statusColor = 'text-white';
+                    break;
+                case 'invalid':
+                    statusClass = 'invalid-status';
+                    statusIcon = 'x-circle';
+                    statusText = 'ESTACIONAMENTO INVÁLIDO';
+                    statusColor = 'text-white';
+                    break;
+                default:
+                    statusClass = 'warning-status';
+                    statusIcon = 'alert-circle';
+                    statusText = 'VEÍCULO NÃO CADASTRADO';
+                    statusColor = 'text-white';
+            }
+
+            const resultCard = document.createElement('div');
+            resultCard.className = `${statusClass} rounded-2xl p-6 mb-6 text-white fade-in`;
+            
+            let resultContent = `
+                <div class="text-center mb-4">
+                    <i data-feather="${statusIcon}" class="w-16 h-16 mx-auto mb-2"></i>
+                    <h3 class="text-xl font-bold">${statusText}</h3>
+                    <p class="text-lg opacity-90 mt-2">${plate}</p>
+                </div>
+            `;
+
+            if (result.status === 'valid' && result.session) {
+                const timeRemaining = Math.floor((new Date(result.session.tempo_fim) - new Date()) / (1000 * 60));
+                resultContent += `
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span>Veículo:</span>
+                            <span>${result.vehicle.marca} ${result.vehicle.modelo}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Zona:</span>
+                            <span>${result.zone.nome}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Tempo Restante:</span>
+                            <span class="font-bold">${formatTime(timeRemaining)}</span>
+                        </div>
+                    </div>
+                `;
+            } else if (result.status === 'invalid') {
+                resultContent += `
+                    <div class="text-center mb-4">
+                        <p class="text-sm opacity-90">${result.message}</p>
+                    </div>
+                    <button onclick="showPenaltyModal('${plate}')" class="w-full bg-white bg-opacity-20 text-white py-3 rounded-lg font-medium hover:bg-opacity-30 transition-colors">
+                        <i data-feather="alert-triangle" class="w-5 h-5 inline mr-2"></i>
+                        Aplicar Multa
+                    </button>
+                `;
+            }
+
+            resultCard.innerHTML = resultContent;
+            resultContainer.appendChild(resultCard);
+            
+            feather.replace();
+        }
+
+        function showPenaltyModal(plate) {
+            document.getElementById('penaltyModal').classList.remove('hidden');
+            // Armazenar placa para uso posterior
+            window.currentPenaltyPlate = plate;
+        }
+
+        function hidePenaltyModal() {
+            document.getElementById('penaltyModal').classList.add('hidden');
+            delete window.currentPenaltyPlate;
+        }
+
+        async function handleApplyPenalty() {
+            if (!window.currentPenaltyPlate) return;
+
+            const reason = document.getElementById('penaltyReason').value;
+            
+            try {
+                // Encontrar veículo
+                const vehicle = db.findVehicleByPlate(window.currentPenaltyPlate);
+                
+                if (vehicle) {
+                    const zoneId = document.getElementById('zoneSelect').value;
+                    await EnforcementService.issuePenalty(vehicle.id, zoneId, reason);
+                    
+                    hidePenaltyModal();
+                    document.getElementById('verificationResult').classList.add('hidden');
+                    showNotification('Multa aplicada com sucesso!', 'success');
+                } else {
+                    showNotification('Veículo não encontrado', 'error');
+                }
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        function handleSync() {
+            const syncBtn = document.getElementById('syncBtn');
+            const icon = syncBtn.querySelector('i');
+            
+            // Animação de sincronização
+            icon.classList.add('animate-spin');
+            syncBtn.disabled = true;
+            
+            setTimeout(() => {
+                icon.classList.remove('animate-spin');
+                syncBtn.disabled = false;
+                showNotification('Dados sincronizados com sucesso!', 'success');
+            }, 2000);
+        }
+
+        // Funções auxiliares
+        function formatPlate(e) {
+            let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            if (value.length > 3) {
+                value = value.replace(/([A-Z]{3})([0-9A-Z])/, '$1-$2');
+            }
+            e.target.value = value;
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const icon = document.getElementById('notificationIcon');
+            const messageEl = document.getElementById('notificationMessage');
+            
+            // Configurar ícone e cor
+            const icons = {
+                success: 'check-circle text-green-500',
+                error: 'x-circle text-red-500',
+                warning: 'alert-circle text-yellow-500',
+                info: 'info text-blue-500'
+            };
+            
+            icon.className = `w-6 h-6 mr-3 ${icons[type]}`;
+            messageEl.textContent = message;
+            
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
