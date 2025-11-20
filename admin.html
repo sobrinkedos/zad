@@ -358,6 +358,8 @@
     </div>
 
     <script src="main.js"></script>
+    <script src="config/supabase-config.js"></script>
+    <script type="module" src="admin-supabase.js"></script>
     <script>
         // Variáveis para gráficos
         let revenueChart = null;
@@ -527,6 +529,14 @@
                 createUsageChart();
                 
                 showNotification('Dados atualizados com sucesso!', 'success');
+                if (!document.getElementById('penaltiesDynamic')) {
+                    const container = document.createElement('div');
+                    container.id = 'penaltiesDynamic';
+                    container.className = 'glass-effect rounded-2xl p-6 admin-card mt-6';
+                    container.innerHTML = '<h3 class="text-lg font-semibold text-gray-800 mb-4">Penalidades</h3><div id="penaltiesList" class="space-y-3"></div>';
+                    document.getElementById('adminDashboard').appendChild(container);
+                }
+                loadPenaltiesSupabase();
             } catch (error) {
                 showNotification('Erro ao carregar dados: ' + error.message, 'error');
             }
@@ -634,46 +644,49 @@
             });
         }
 
-        function loadZones() {
+        async function loadZones() {
             const zonesList = document.getElementById('zonesList');
-            const zones = db.getAll('zones');
-
-            zonesList.innerHTML = '';
-
-            if (zones.length === 0) {
-                zonesList.innerHTML = '<p class="text-gray-500 text-center">Nenhuma zona cadastrada</p>';
-                return;
+            zonesList.innerHTML = '<p class="text-gray-500">Carregando...</p>';
+            try {
+                const mod = await import('./admin-supabase.js');
+                const zones = await mod.listZones();
+                AppState.zones = zones.filter(z => z.status === 'ativa');
+                zonesList.innerHTML = '';
+                if (zones.length === 0) {
+                    zonesList.innerHTML = '<p class="text-gray-500 text-center">Nenhuma zona cadastrada</p>';
+                    return;
+                }
+                zones.forEach(zone => {
+                    const zoneCard = document.createElement('div');
+                    zoneCard.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
+                    zoneCard.innerHTML = `
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-semibold text-gray-800">${zone.nome}</h4>
+                                <span class="text-green-600 font-bold">${formatCurrency(zone.valor_hora)}/h</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-1">${zone.localizacao}</p>
+                            <div class="flex items-center justify-between text-xs text-gray-500">
+                                <span>${zone.horario_inicio} - ${zone.horario_fim}</span>
+                                <span>${zone.vagas || 0} vagas</span>
+                                <span class="px-2 py-1 rounded ${zone.status === 'ativa' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${zone.status === 'ativa' ? 'Ativa' : 'Inativa'}</span>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2 ml-4">
+                            <button onclick="editZone('${zone.id}')" class="text-blue-600 hover:text-blue-700">
+                                <i data-feather="edit-2" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteZone('${zone.id}')" class="text-red-600 hover:text-red-700">
+                                <i data-feather="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    `;
+                    zonesList.appendChild(zoneCard);
+                });
+                feather.replace();
+            } catch (e) {
+                zonesList.innerHTML = `<p class='text-red-600'>Erro: ${e.message}</p>`;
             }
-
-            zones.forEach(zone => {
-                const zoneCard = document.createElement('div');
-                zoneCard.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
-                zoneCard.innerHTML = `
-                    <div class="flex-1">
-                        <div class="flex items-center justify-between mb-2">
-                            <h4 class="font-semibold text-gray-800">${zone.nome}</h4>
-                            <span class="text-green-600 font-bold">${formatCurrency(zone.valor_hora)}/h</span>
-                        </div>
-                        <p class="text-sm text-gray-600 mb-1">${zone.localizacao}</p>
-                        <div class="flex items-center justify-between text-xs text-gray-500">
-                            <span>${zone.horario_inicio} - ${zone.horario_fim}</span>
-                            <span>${zone.vagas || 0} vagas</span>
-                            <span class="px-2 py-1 rounded ${zone.status === 'ativa' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${zone.status === 'ativa' ? 'Ativa' : 'Inativa'}</span>
-                        </div>
-                    </div>
-                    <div class="flex space-x-2 ml-4">
-                        <button onclick="editZone('${zone.id}')" class="text-blue-600 hover:text-blue-700">
-                            <i data-feather="edit-2" class="w-4 h-4"></i>
-                        </button>
-                        <button onclick="deleteZone('${zone.id}')" class="text-red-600 hover:text-red-700">
-                            <i data-feather="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                `;
-                zonesList.appendChild(zoneCard);
-            });
-
-            feather.replace();
         }
 
         function loadUsers() {
@@ -792,6 +805,50 @@
             feather.replace();
         }
 
+        async function loadPenaltiesSupabase() {
+            const list = document.getElementById('penaltiesList');
+            if (!list) return;
+            list.innerHTML = '<p class="text-gray-500">Carregando...</p>';
+            try {
+                const mod = await import('./admin-supabase.js');
+                const penalties = await mod.listPenalties();
+                list.innerHTML = '';
+                if (!penalties.length) {
+                    list.innerHTML = '<p class="text-gray-500 text-center">Nenhuma penalidade</p>';
+                    return;
+                }
+                penalties.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
+                    const evidBtn = (p.evidencias_url && p.evidencias_url.length) ? `<button class="text-purple-600 hover:text-purple-800" onclick="viewEvidence('${p.id}','${p.evidencias_url[0]}')"><i data-feather='image' class='w-4 h-4'></i></button>` : '';
+                    card.innerHTML = `
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-semibold text-gray-800">${p.motivo}</h4>
+                                <span class="font-bold text-red-600">${formatCurrency(p.valor)}</span>
+                            </div>
+                            <div class="text-xs text-gray-500">${new Date(p.created_at).toLocaleString('pt-BR')}</div>
+                        </div>
+                        <div class="ml-4 flex space-x-2">${evidBtn}</div>
+                    `;
+                    list.appendChild(card);
+                });
+                feather.replace();
+            } catch (e) {
+                list.innerHTML = `<p class='text-red-600'>Erro: ${e.message}</p>`;
+            }
+        }
+
+        async function viewEvidence(penaltyId, path) {
+            try {
+                const mod = await import('./admin-supabase.js');
+                const url = await mod.signEvidence(penaltyId, path);
+                window.open(url, '_blank');
+            } catch (e) {
+                showNotification(e.message, 'error');
+            }
+        }
+
         // Funções de modal de zona
         function showZoneModal() {
             currentEditingZone = null;
@@ -848,28 +905,28 @@
             };
 
             try {
+                const mod = await import('./admin-supabase.js');
                 if (currentEditingZone) {
-                    await AdminService.updateZone(currentEditingZone, zoneData);
+                    await mod.updateZone(currentEditingZone, zoneData);
                     showNotification('Zona atualizada com sucesso!', 'success');
                 } else {
-                    await AdminService.createZone(zoneData);
+                    await mod.createZone(zoneData);
                     showNotification('Zona criada com sucesso!', 'success');
                 }
                 
                 hideZoneModal();
                 loadZones();
-                AppState.zones = db.getAll('zones').filter(zone => zone.status === 'ativa');
             } catch (error) {
                 showNotification(error.message, 'error');
             }
         }
 
-        function deleteZone(zoneId) {
+        async function deleteZone(zoneId) {
             if (confirm('Tem certeza que deseja excluir esta zona?')) {
                 try {
-                    AdminService.deleteZone(zoneId);
+                    const mod = await import('./admin-supabase.js');
+                    await mod.deleteZone(zoneId);
                     loadZones();
-                    AppState.zones = db.getAll('zones').filter(zone => zone.status === 'ativa');
                     showNotification('Zona excluída com sucesso!', 'success');
                 } catch (error) {
                     showNotification(error.message, 'error');
