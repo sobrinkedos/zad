@@ -23,6 +23,12 @@ interface User {
     created_at: string;
 }
 
+interface Municipality {
+    id: string;
+    nome: string;
+    status: string;
+}
+
 const ROLES = [
     { label: 'Super Admin', value: 'superadmin', color: 'red' },
     { label: 'Administrador', value: 'admin', color: 'blue' },
@@ -41,6 +47,8 @@ export default function Users() {
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [form] = Form.useForm();
     const [createForm] = Form.useForm();
+    const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
+    const [search, setSearch] = useState<string>('');
 
     // ---------- Data loading ----------
     const loadUsers = async () => {
@@ -58,8 +66,19 @@ export default function Users() {
         }
     };
 
+    const loadMunicipalities = async () => {
+        try {
+            const { data, error } = await supabase.from('municipalities').select('id,nome,status').eq('status','ativo');
+            if (error) throw error;
+            setMunicipalities(data as Municipality[]);
+        } catch (err: any) {
+            const msg = String(err?.message || '');
+            if (msg.includes('Abort') || msg.includes('ERR_ABORTED')) return;
+        }
+    };
+
     useEffect(() => {
-        const t = setTimeout(() => { loadUsers(); }, 500);
+        const t = setTimeout(() => { loadUsers(); loadMunicipalities(); }, 500);
         return () => clearTimeout(t);
     }, []);
 
@@ -75,7 +94,7 @@ export default function Users() {
         try {
             const { error } = await supabase
                 .from('accounts')
-                .update({ role: values.role })
+                .update({ role: values.role, municipality_id: values.municipality_id || null })
                 .eq('user_id', editingUser.user_id);
             if (error) throw error;
             message.success('Perfil atualizado com sucesso!');
@@ -188,11 +207,18 @@ export default function Users() {
                     ))}
                 </div>
             </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Input.Search placeholder="Buscar por nome ou email" allowClear onSearch={v => setSearch(v)} onChange={e => setSearch(e.target.value)} style={{ maxWidth: 320 }} />
+            </div>
 
             {/* Users table */}
             <Table
                 columns={columns}
-                dataSource={users}
+                dataSource={users.filter(u => {
+                    const q = search.trim().toLowerCase();
+                    if (!q) return true;
+                    return (u.nome || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q);
+                })}
                 rowKey="user_id"
                 loading={loading}
                 pagination={{ pageSize: 15 }}
@@ -245,6 +271,13 @@ export default function Users() {
                                         {role.label}
                                     </Tag>
                                 </Select.Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+                    <Form.Item name="municipality_id" label="Município">
+                        <Select size="large" allowClear showSearch filterOption={(input, option) => (option?.children as string).toLowerCase().includes(input.toLowerCase())}>
+                            {municipalities.map(m => (
+                                <Select.Option key={m.id} value={m.id}>{m.nome}</Select.Option>
                             ))}
                         </Select>
                     </Form.Item>
@@ -312,7 +345,11 @@ export default function Users() {
                         <Input placeholder="CPF" />
                     </Form.Item>
                     <Form.Item name="municipality_id" label="Município (opcional)">               
-                        <Input placeholder="UUID do município" />
+                        <Select allowClear showSearch filterOption={(input, option) => (option?.children as string).toLowerCase().includes(input.toLowerCase())}>
+                            {municipalities.map(m => (
+                                <Select.Option key={m.id} value={m.id}>{m.nome}</Select.Option>
+                            ))}
+                        </Select>
                     </Form.Item>
                     <Form.Item name="role" label="Perfil" rules={[{ required: true }]}>           
                         <Select size="large">

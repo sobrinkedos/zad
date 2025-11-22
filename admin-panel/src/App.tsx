@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Zones from './pages/Zones'
 import Users from './pages/Users'
 import Login from './pages/Login'
+import Reports from './pages/Reports'
 
 function App() {
   return (
@@ -17,7 +18,7 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="zones" element={<Zones />} />
             <Route path="users" element={<Users />} />
-            <Route path="reports" element={<div>Relatórios (em breve)</div>} />
+            <Route path="reports" element={<Reports />} />
           </Route>
         </Routes>
       </BrowserRouter>
