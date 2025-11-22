@@ -7,13 +7,15 @@ import dayjs from 'dayjs'
 
 interface Zone {
     id: string
-    name: string
-    hourly_rate: number
-    start_time: string
-    end_time: string
-    active: boolean
-    max_duration_minutes?: number
-    tolerance_minutes?: number
+    nome: string
+    localizacao: string
+    valor_hora: number
+    horario_inicio: string
+    horario_fim: string
+    dias_funcionamento: string[]
+    tolerancia_minutos: number
+    status: string
+    vagas: number
 }
 
 export default function Zones() {
@@ -33,7 +35,7 @@ export default function Zones() {
             const { data, error } = await supabase
                 .from('zones')
                 .select('*')
-                .order('name')
+                .order('nome')
 
             if (error) throw error
             setZones(data || [])
@@ -48,11 +50,12 @@ export default function Zones() {
         setEditingZone(null)
         form.resetFields()
         form.setFieldsValue({
-            active: true,
-            max_duration_minutes: 120,
-            tolerance_minutes: 5,
-            start_time: dayjs('08:00', 'HH:mm'),
-            end_time: dayjs('18:00', 'HH:mm')
+            status: 'ativa',
+            tolerancia_minutos: 5,
+            vagas: 50,
+            dias_funcionamento: ['seg', 'ter', 'qua', 'qui', 'sex'],
+            horario_inicio: dayjs('08:00', 'HH:mm'),
+            horario_fim: dayjs('18:00', 'HH:mm')
         })
         setIsModalOpen(true)
     }
@@ -61,8 +64,8 @@ export default function Zones() {
         setEditingZone(zone)
         form.setFieldsValue({
             ...zone,
-            start_time: dayjs(zone.start_time, 'HH:mm:ss'),
-            end_time: dayjs(zone.end_time, 'HH:mm:ss')
+            horario_inicio: dayjs(zone.horario_inicio, 'HH:mm:ss'),
+            horario_fim: dayjs(zone.horario_fim, 'HH:mm:ss')
         })
         setIsModalOpen(true)
     }
@@ -94,13 +97,15 @@ export default function Zones() {
     const handleSubmit = async (values: any) => {
         try {
             const zoneData = {
-                name: values.name,
-                hourly_rate: values.hourly_rate,
-                start_time: values.start_time.format('HH:mm:ss'),
-                end_time: values.end_time.format('HH:mm:ss'),
-                active: values.active ?? true,
-                max_duration_minutes: values.max_duration_minutes ?? 120,
-                tolerance_minutes: values.tolerance_minutes ?? 5
+                nome: values.nome,
+                localizacao: values.localizacao,
+                valor_hora: values.valor_hora,
+                horario_inicio: values.horario_inicio.format('HH:mm:ss'),
+                horario_fim: values.horario_fim.format('HH:mm:ss'),
+                status: values.status ?? 'ativa',
+                tolerancia_minutos: values.tolerancia_minutos ?? 5,
+                vagas: values.vagas ?? 50,
+                dias_funcionamento: values.dias_funcionamento ?? ['seg', 'ter', 'qua', 'qui', 'sex']
             }
 
             if (editingZone) {
@@ -131,37 +136,41 @@ export default function Zones() {
     const columns: ColumnsType<Zone> = [
         {
             title: 'Nome',
-            dataIndex: 'name',
-            key: 'name',
+            dataIndex: 'nome',
+            key: 'nome',
+        },
+        {
+            title: 'Localização',
+            dataIndex: 'localizacao',
+            key: 'localizacao',
         },
         {
             title: 'Valor/Hora',
-            dataIndex: 'hourly_rate',
-            key: 'hourly_rate',
+            dataIndex: 'valor_hora',
+            key: 'valor_hora',
             render: (value) => `R$ ${value.toFixed(2)}`
         },
         {
             title: 'Horário',
             key: 'schedule',
             render: (_, record) => {
-                const start = record.start_time.substring(0, 5)
-                const end = record.end_time.substring(0, 5)
+                const start = record.horario_inicio.substring(0, 5)
+                const end = record.horario_fim.substring(0, 5)
                 return `${start} - ${end}`
             }
         },
         {
-            title: 'Duração Máx.',
-            dataIndex: 'max_duration_minutes',
-            key: 'max_duration_minutes',
-            render: (value) => value ? `${value} min` : '-'
+            title: 'Vagas',
+            dataIndex: 'vagas',
+            key: 'vagas',
         },
         {
             title: 'Status',
-            dataIndex: 'active',
-            key: 'active',
-            render: (active) => (
-                <span style={{ color: active ? '#16a34a' : '#dc2626', fontWeight: 500 }}>
-                    {active ? '✓ Ativa' : '✗ Inativa'}
+            dataIndex: 'status',
+            key: 'status',
+            render: (status) => (
+                <span style={{ color: status === 'ativa' ? '#16a34a' : '#dc2626', fontWeight: 500 }}>
+                    {status === 'ativa' ? '✓ Ativa' : '✗ Inativa'}
                 </span>
             )
         },
@@ -219,7 +228,7 @@ export default function Zones() {
                     onFinish={handleSubmit}
                 >
                     <Form.Item
-                        name="name"
+                        name="nome"
                         label="Nome da Zona"
                         rules={[{ required: true, message: 'Digite o nome da zona' }]}
                     >
@@ -227,7 +236,15 @@ export default function Zones() {
                     </Form.Item>
 
                     <Form.Item
-                        name="hourly_rate"
+                        name="localizacao"
+                        label="Localização"
+                        rules={[{ required: true, message: 'Digite a localização' }]}
+                    >
+                        <Input placeholder="Ex: Rua Principal, Centro" />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="valor_hora"
                         label="Valor por Hora (R$)"
                         rules={[{ required: true, message: 'Digite o valor' }]}
                     >
@@ -242,7 +259,7 @@ export default function Zones() {
 
                     <Space style={{ width: '100%' }} size="large">
                         <Form.Item
-                            name="start_time"
+                            name="horario_inicio"
                             label="Horário Inicial"
                             rules={[{ required: true, message: 'Selecione' }]}
                         >
@@ -250,7 +267,7 @@ export default function Zones() {
                         </Form.Item>
 
                         <Form.Item
-                            name="end_time"
+                            name="horario_fim"
                             label="Horário Final"
                             rules={[{ required: true, message: 'Selecione' }]}
                         >
@@ -260,14 +277,14 @@ export default function Zones() {
 
                     <Space style={{ width: '100%' }} size="large">
                         <Form.Item
-                            name="max_duration_minutes"
-                            label="Duração Máxima (min)"
+                            name="vagas"
+                            label="Número de Vagas"
                         >
-                            <InputNumber min={15} max={480} placeholder="120" />
+                            <InputNumber min={1} max={1000} placeholder="50" />
                         </Form.Item>
 
                         <Form.Item
-                            name="tolerance_minutes"
+                            name="tolerancia_minutos"
                             label="Tolerância (min)"
                         >
                             <InputNumber min={0} max={30} placeholder="5" />
@@ -275,11 +292,15 @@ export default function Zones() {
                     </Space>
 
                     <Form.Item
-                        name="active"
+                        name="status"
                         label="Status"
-                        valuePropName="checked"
                     >
-                        <Switch checkedChildren="Ativa" unCheckedChildren="Inativa" />
+                        <Switch
+                            checkedChildren="Ativa"
+                            unCheckedChildren="Inativa"
+                            checked={form.getFieldValue('status') === 'ativa'}
+                            onChange={(checked) => form.setFieldValue('status', checked ? 'ativa' : 'inativa')}
+                        />
                     </Form.Item>
 
                     <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
