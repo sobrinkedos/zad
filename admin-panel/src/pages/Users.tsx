@@ -276,11 +276,13 @@ export default function Users() {
                         </Select>
                     </Form.Item>
                     <Form.Item name="municipality_id" label="Município">
-                        <Select size="large" allowClear showSearch filterOption={(input, option) => { const label = (option?.children as unknown as string) ?? ''; return label.toLowerCase().includes(input.toLowerCase()) }}>
-                            {municipalities.map(m => (
-                                <Select.Option key={m.id} value={m.id}>{m.nome}</Select.Option>
-                            ))}
-                        </Select>
+                        <Select
+                            size="large"
+                            allowClear
+                            showSearch
+                            optionFilterProp="label"
+                            options={municipalities.map(m => ({ label: m.nome, value: m.id }))}
+                        />
                     </Form.Item>
 
                     <div
@@ -346,11 +348,12 @@ export default function Users() {
                         <Input placeholder="CPF" />
                     </Form.Item>
                     <Form.Item name="municipality_id" label="Município (opcional)">               
-                        <Select allowClear showSearch filterOption={(input, option) => { const label = (option?.children as unknown as string) ?? ''; return label.toLowerCase().includes(input.toLowerCase()) }}>
-                            {municipalities.map(m => (
-                                <Select.Option key={m.id} value={m.id}>{m.nome}</Select.Option>
-                            ))}
-                        </Select>
+                        <Select
+                            allowClear
+                            showSearch
+                            optionFilterProp="label"
+                            options={municipalities.map(m => ({ label: m.nome, value: m.id }))}
+                        />
                     </Form.Item>
                     <Form.Item name="role" label="Perfil" rules={[{ required: true }]}>           
                         <Select size="large">
