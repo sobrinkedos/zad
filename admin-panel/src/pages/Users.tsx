@@ -346,7 +346,7 @@ export default function Users() {
                         <Input placeholder="CPF" />
                     </Form.Item>
                     <Form.Item name="municipality_id" label="Município (opcional)">               
-                        <Select allowClear showSearch filterOption={(input, option) => (option?.children as string).toLowerCase().includes(input.toLowerCase())}>
+                        <Select allowClear showSearch filterOption={(input, option) => { const label = (option?.children as unknown as string) ?? ''; return label.toLowerCase().includes(input.toLowerCase()) }}>
                             {municipalities.map(m => (
                                 <Select.Option key={m.id} value={m.id}>{m.nome}</Select.Option>
                             ))}
