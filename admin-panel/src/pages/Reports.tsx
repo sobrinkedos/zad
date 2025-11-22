@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Card, Row, Col, Statistic, DatePicker, Space, Button, message, Select, Table, Dropdown } from 'antd'
+import { Card, Row, Col, Statistic, DatePicker, Button, message, Select, Table, Dropdown } from 'antd'
 import dayjs from 'dayjs'
 import { supabase } from '../lib/supabase'
 
@@ -206,10 +206,34 @@ export default function Reports() {
             size="small"
             style={{ minWidth: 260, flex: '1 1 280px' }}
           />
-          <Select allowClear placeholder="Município" value={municipalityId} onChange={setMunicipalityId} size="small" style={{ minWidth: 200, flex: '1 1 220px' }} showSearch filterOption={(input, option) => (option?.children as string).toLowerCase().includes(input.toLowerCase())}>
+          <Select
+            allowClear
+            placeholder="Município"
+            value={municipalityId}
+            onChange={setMunicipalityId}
+            size="small"
+            style={{ minWidth: 200, flex: '1 1 220px' }}
+            showSearch
+            filterOption={(input, option) => {
+              const label = (option?.children as unknown as string) ?? ''
+              return label.toLowerCase().includes(input.toLowerCase())
+            }}
+          >
             {municipalities.map(m => (<Select.Option key={m.id} value={m.id}>{m.nome}</Select.Option>))}
           </Select>
-          <Select allowClear placeholder="Zona" value={zoneId} onChange={setZoneId} size="small" style={{ minWidth: 200, flex: '1 1 220px' }} showSearch filterOption={(input, option) => (option?.children as string).toLowerCase().includes(input.toLowerCase())}>
+          <Select
+            allowClear
+            placeholder="Zona"
+            value={zoneId}
+            onChange={setZoneId}
+            size="small"
+            style={{ minWidth: 200, flex: '1 1 220px' }}
+            showSearch
+            filterOption={(input, option) => {
+              const label = (option?.children as unknown as string) ?? ''
+              return label.toLowerCase().includes(input.toLowerCase())
+            }}
+          >
             {zones.map(z => (<Select.Option key={z.id} value={z.id}>{z.nome}</Select.Option>))}
           </Select>
           <Button type="primary" size="small" onClick={load} loading={loading}>Atualizar</Button>
@@ -326,16 +350,6 @@ export default function Reports() {
         />
       </Card>
 
-      {/* Resumo por zona */}
-      <Card style={{ marginTop: 24 }}>
-        <h3 style={{ marginBottom: 12 }}>Resumo por Zona</h3>
-        {(() => {
-          const zoneNames = Object.fromEntries(zones.map(z => [z.id, z.nome]))
-          // Build zone stats from sessData & penData already aggregated payloads via daily calculation context
-          // Recompute for simplicity in UI: query needed again when pressing Atualizar
-          return null
-        })()}
-      </Card>
     </div>
   )
 }
