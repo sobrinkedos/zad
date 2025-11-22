@@ -202,7 +202,7 @@ export default function Reports() {
             value={range}
             onChange={(v) => { if (v && v[0] && v[1]) setRange([v[0], v[1]]) }}
             showTime
-            format="YYYY-MM-DD HH:mm"
+            format="DD/MM/YYYY HH:mm"
             size="small"
             style={{ minWidth: 260, flex: '1 1 280px' }}
           />
@@ -256,8 +256,8 @@ export default function Reports() {
         <h3 style={{ marginBottom: 12 }}>Visualização diária</h3>
         <div style={{ display: 'grid', gap: 8 }}>
           {daily.map((r) => (
-            <div key={r.date} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', alignItems: 'center', gap: 12 }}>
-              <div style={{ color: '#666' }}>{r.date}</div>
+            <div key={r.date} style={{ display: 'grid', gridTemplateColumns: '160px 1fr', alignItems: 'center', gap: 12 }}>
+              <div style={{ color: '#666' }}>{dayjs(r.date).format('DD/MM/YYYY')}</div>
               <div style={{ display: 'grid', gap: 6 }}>
                 {(() => {
                   const max = Math.max(1, ...daily.map(d => d.revenue))
@@ -301,7 +301,7 @@ export default function Reports() {
           rowKey={r => r.date}
           pagination={false}
           columns={[
-            { title: 'Data', dataIndex: 'date', key: 'date' },
+            { title: 'Data', dataIndex: 'date', key: 'date', render: (v: string) => dayjs(v).format('DD/MM/YYYY') },
             { title: 'Arrecadação (R$)', dataIndex: 'revenue', key: 'revenue', render: (v: number) => v.toFixed(2) },
             { title: 'Sessões', dataIndex: 'sessions', key: 'sessions' },
             { title: 'Multas', dataIndex: 'penalties', key: 'penalties' },
@@ -315,7 +315,7 @@ export default function Reports() {
           rowKey={r => r.date}
           pagination={false}
           columns={[
-            { title: 'Data', dataIndex: 'date', key: 'date' },
+            { title: 'Data', dataIndex: 'date', key: 'date', render: (v: string) => dayjs(v).format('DD/MM/YYYY') },
             { title: 'Compras (R$)', dataIndex: 'comprasValor', key: 'comprasValor', render: (v: number) => v.toFixed(2) },
             { title: 'Compras (Qtd)', dataIndex: 'compras', key: 'compras' },
             { title: 'Usos (R$)', dataIndex: 'usosValor', key: 'usosValor', render: (v: number) => v.toFixed(2) },
