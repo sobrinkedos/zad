@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Layout, Menu } from 'antd'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { LayoutDashboard, MapPin, Users, FileText, LogOut } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 const { Header, Sider, Content } = Layout
 
@@ -9,6 +10,30 @@ export default function MainLayout() {
     const [collapsed, setCollapsed] = useState(false)
     const navigate = useNavigate()
     const location = useLocation()
+    const [displayName, setDisplayName] = useState('')
+
+    useEffect(() => {
+        const check = async () => {
+            const { data } = await supabase.auth.getSession()
+            const user = data.session?.user
+            if (!user) {
+                navigate('/login')
+                return
+            }
+            const role = (user.app_metadata as any)?.app_role || (user.user_metadata as any)?.app_role
+            if (role !== 'admin' && role !== 'superadmin') {
+                navigate('/login')
+                return
+            }
+            const nome = (user.user_metadata as any)?.nome
+            setDisplayName(nome ? String(nome) : role)
+        }
+        check()
+        const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
+            if (!session) navigate('/login')
+        })
+        return () => { sub.subscription.unsubscribe() }
+    }, [navigate])
 
     const menuItems = [
         {
@@ -74,8 +99,8 @@ export default function MainLayout() {
                         Painel Administrativo
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <span>Admin</span>
-                        <LogOut size={18} className="cursor-pointer" />
+                        <span>{displayName || 'Admin'}</span>
+                        <LogOut size={18} className="cursor-pointer" onClick={async () => { await supabase.auth.signOut(); navigate('/login') }} />
                     </div>
                 </Header>
 

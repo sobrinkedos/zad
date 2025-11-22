@@ -4,7 +4,7 @@ import { DollarSign, Users, MapPin, AlertCircle } from 'lucide-react'
 export default function Dashboard() {
     return (
         <div>
-            <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+            <h1 style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 24 }}>Dashboard</h1>
 
             <Row gutter={16}>
                 <Col span={6}>
@@ -13,8 +13,6 @@ export default function Dashboard() {
                             title="Arrecadação Hoje"
                             value={1250.50}
                             precision={2}
-                            prefix="R$"
-                            valueStyle={{ color: '#3f8600' }}
                             prefix={<DollarSign size={20} />}
                         />
                     </Card>
@@ -42,7 +40,6 @@ export default function Dashboard() {
                         <Statistic
                             title="Multas Hoje"
                             value={5}
-                            valueStyle={{ color: '#cf1322' }}
                             prefix={<AlertCircle size={20} />}
                         />
                     </Card>

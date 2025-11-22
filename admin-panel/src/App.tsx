@@ -4,6 +4,7 @@ import ptBR from 'antd/locale/pt_BR'
 import MainLayout from './layouts/MainLayout'
 import Dashboard from './pages/Dashboard'
 import Zones from './pages/Zones'
+import Users from './pages/Users'
 import Login from './pages/Login'
 
 function App() {
@@ -15,7 +16,7 @@ function App() {
           <Route path="/" element={<MainLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="zones" element={<Zones />} />
-            <Route path="users" element={<div>Usuários (em breve)</div>} />
+            <Route path="users" element={<Users />} />
             <Route path="reports" element={<div>Relatórios (em breve)</div>} />
           </Route>
         </Routes>
