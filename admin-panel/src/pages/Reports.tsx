@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Card, Row, Col, Statistic, DatePicker, Space, Button, message } from 'antd'
+import { Card, Row, Col, Statistic, DatePicker, Space, Button, message, Select, Table } from 'antd'
 import dayjs from 'dayjs'
 import { supabase } from '../lib/supabase'
 
@@ -9,22 +9,72 @@ export default function Reports() {
   const [revenue, setRevenue] = useState(0)
   const [sessions, setSessions] = useState(0)
   const [penalties, setPenalties] = useState(0)
+  const [municipalities, setMunicipalities] = useState<Array<{ id: string; nome: string }>>([])
+  const [zones, setZones] = useState<Array<{ id: string; nome: string }>>([])
+  const [municipalityId, setMunicipalityId] = useState<string | undefined>(undefined)
+  const [zoneId, setZoneId] = useState<string | undefined>(undefined)
+  const [daily, setDaily] = useState<Array<{ date: string; revenue: number; sessions: number; penalties: number }>>([])
 
   const load = async () => {
     setLoading(true)
     try {
       const start = range[0].toISOString()
       const end = range[1].toISOString()
-      const [{ count: sessCnt }, { count: penCnt }, trxRes] = await Promise.all([
-        supabase.from('sessions').select('*', { count: 'exact', head: true }).gte('inicio', start).lte('inicio', end),
-        supabase.from('penalties').select('*', { count: 'exact', head: true }).gte('created_at', start).lte('created_at', end),
-        supabase.from('transactions').select('valor, tipo, created_at').gte('created_at', start).lte('created_at', end),
-      ])
-      setSessions(sessCnt || 0)
-      setPenalties(penCnt || 0)
-      const list = (trxRes.data || []).filter((t: any) => t.tipo === 'compra')
-      const sum = list.reduce((acc: number, x: any) => acc + Number(x.valor || 0), 0)
-      setRevenue(sum)
+      // Filters
+      let accountsUserIds: string[] | null = null
+      if (municipalityId) {
+        const { data: accIds } = await supabase.from('accounts').select('user_id').eq('municipality_id', municipalityId)
+        accountsUserIds = (accIds || []).map((a: any) => a.user_id)
+      }
+
+      // Query sessions
+      let sessionsQuery = supabase.from('sessions').select('user_id, inicio').gte('inicio', start).lte('inicio', end)
+      if (zoneId) sessionsQuery = sessionsQuery.eq('zone_id', zoneId)
+      if (accountsUserIds && accountsUserIds.length) sessionsQuery = sessionsQuery.in('user_id', accountsUserIds)
+      const sessRes = await sessionsQuery
+      const sessData = (sessRes.data || [])
+
+      // Query penalties (filterable by zone)
+      let penaltiesQuery = supabase.from('penalties').select('created_at, zone_id').gte('created_at', start).lte('created_at', end)
+      if (zoneId) penaltiesQuery = penaltiesQuery.eq('zone_id', zoneId)
+      const penRes = await penaltiesQuery
+      const penData = (penRes.data || [])
+
+      // Query transactions (filterable by municipality via accounts user_id)
+      let trxQuery = supabase.from('transactions').select('valor, tipo, created_at, user_id').gte('created_at', start).lte('created_at', end)
+      if (accountsUserIds && accountsUserIds.length) trxQuery = trxQuery.in('user_id', accountsUserIds)
+      const trxRes = await trxQuery
+      const trxData = (trxRes.data || [])
+
+      // Totals
+      const revenueList = trxData.filter((t: any) => t.tipo === 'compra')
+      const revenueSum = revenueList.reduce((acc: number, x: any) => acc + Number(x.valor || 0), 0)
+      setRevenue(revenueSum)
+      setSessions(sessData.length)
+      setPenalties(penData.length)
+
+      // Daily grouping
+      const map: Record<string, { revenue: number; sessions: number; penalties: number }> = {}
+      const keyFn = (d: string) => dayjs(d).format('YYYY-MM-DD')
+      revenueList.forEach((t: any) => {
+        const k = keyFn(t.created_at)
+        map[k] = map[k] || { revenue: 0, sessions: 0, penalties: 0 }
+        map[k].revenue += Number(t.valor || 0)
+      })
+      sessData.forEach((s: any) => {
+        const k = keyFn(s.inicio)
+        map[k] = map[k] || { revenue: 0, sessions: 0, penalties: 0 }
+        map[k].sessions += 1
+      })
+      penData.forEach((p: any) => {
+        const k = keyFn(p.created_at)
+        map[k] = map[k] || { revenue: 0, sessions: 0, penalties: 0 }
+        map[k].penalties += 1
+      })
+      const rows = Object.entries(map)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([date, v]) => ({ date, ...v }))
+      setDaily(rows)
     } catch (err: any) {
       const msg = String(err?.message || '')
       if (msg.includes('Abort') || msg.includes('ERR_ABORTED')) return
@@ -34,7 +84,16 @@ export default function Reports() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load(); (async () => {
+    try {
+      const [{ data: ms }, { data: zs }] = await Promise.all([
+        supabase.from('municipalities').select('id,nome').eq('status','ativo'),
+        supabase.from('zones').select('id,nome')
+      ])
+      setMunicipalities((ms||[]) as any)
+      setZones((zs||[]) as any)
+    } catch {}
+  })() }, [])
 
   const exportCsv = async () => {
     try {
@@ -59,6 +118,18 @@ export default function Reports() {
     }
   }
 
+  const exportAggregatedCsv = () => {
+    const rows = [['date','revenue','sessions','penalties'], ...daily.map(r => [r.date, String(r.revenue), String(r.sessions), String(r.penalties)])]
+    const csv = rows.map(r => r.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `relatorio_agregado_${range[0].format('YYYYMMDD')}_${range[1].format('YYYYMMDD')}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -70,8 +141,15 @@ export default function Reports() {
             showTime
             format="YYYY-MM-DD HH:mm"
           />
+          <Select allowClear placeholder="Município" value={municipalityId} onChange={setMunicipalityId} style={{ minWidth: 220 }} showSearch filterOption={(input, option) => (option?.children as string).toLowerCase().includes(input.toLowerCase())}>
+            {municipalities.map(m => (<Select.Option key={m.id} value={m.id}>{m.nome}</Select.Option>))}
+          </Select>
+          <Select allowClear placeholder="Zona" value={zoneId} onChange={setZoneId} style={{ minWidth: 220 }} showSearch filterOption={(input, option) => (option?.children as string).toLowerCase().includes(input.toLowerCase())}>
+            {zones.map(z => (<Select.Option key={z.id} value={z.id}>{z.nome}</Select.Option>))}
+          </Select>
           <Button type="primary" onClick={load} loading={loading}>Atualizar</Button>
           <Button onClick={exportCsv}>Exportar CSV</Button>
+          <Button onClick={exportAggregatedCsv}>Exportar CSV (Agregado)</Button>
         </Space>
       </div>
 
@@ -92,6 +170,20 @@ export default function Reports() {
           </Card>
         </Col>
       </Row>
+
+      <Card style={{ marginTop: 24 }}>
+        <Table
+          dataSource={daily}
+          rowKey={r => r.date}
+          pagination={false}
+          columns={[
+            { title: 'Data', dataIndex: 'date', key: 'date' },
+            { title: 'Arrecadação (R$)', dataIndex: 'revenue', key: 'revenue', render: (v: number) => v.toFixed(2) },
+            { title: 'Sessões', dataIndex: 'sessions', key: 'sessions' },
+            { title: 'Multas', dataIndex: 'penalties', key: 'penalties' },
+          ]}
+        />
+      </Card>
     </div>
   )
 }
