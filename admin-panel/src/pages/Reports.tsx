@@ -237,6 +237,49 @@ export default function Reports() {
       </Row>
 
       <Card style={{ marginTop: 24 }}>
+        <h3 style={{ marginBottom: 12 }}>Visualização diária</h3>
+        <div style={{ display: 'grid', gap: 8 }}>
+          {daily.map((r) => (
+            <div key={r.date} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', alignItems: 'center', gap: 12 }}>
+              <div style={{ color: '#666' }}>{r.date}</div>
+              <div style={{ display: 'grid', gap: 6 }}>
+                {(() => {
+                  const max = Math.max(1, ...daily.map(d => d.revenue))
+                  const width = Math.round((r.revenue / max) * 100)
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: `${width}%`, height: 8, background: '#1677ff', borderRadius: 4 }} />
+                      <span style={{ fontSize: 12 }}>R$ {r.revenue.toFixed(2)}</span>
+                    </div>
+                  )
+                })()}
+                {(() => {
+                  const max = Math.max(1, ...daily.map(d => d.sessions))
+                  const width = Math.round((r.sessions / max) * 100)
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: `${width}%`, height: 8, background: '#52c41a', borderRadius: 4 }} />
+                      <span style={{ fontSize: 12 }}>{r.sessions} sessões</span>
+                    </div>
+                  )
+                })()}
+                {(() => {
+                  const max = Math.max(1, ...daily.map(d => d.penalties))
+                  const width = Math.round((r.penalties / max) * 100)
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: `${width}%`, height: 8, background: '#faad14', borderRadius: 4 }} />
+                      <span style={{ fontSize: 12 }}>{r.penalties} multas</span>
+                    </div>
+                  )
+                })()}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card style={{ marginTop: 24 }}>
         <Table
           dataSource={daily}
           rowKey={r => r.date}
@@ -265,6 +308,17 @@ export default function Reports() {
             { title: 'Estornos (Qtd)', dataIndex: 'estornos', key: 'estornos' },
           ]}
         />
+      </Card>
+
+      {/* Resumo por zona */}
+      <Card style={{ marginTop: 24 }}>
+        <h3 style={{ marginBottom: 12 }}>Resumo por Zona</h3>
+        {(() => {
+          const zoneNames = Object.fromEntries(zones.map(z => [z.id, z.nome]))
+          // Build zone stats from sessData & penData already aggregated payloads via daily calculation context
+          // Recompute for simplicity in UI: query needed again when pressing Atualizar
+          return null
+        })()}
       </Card>
     </div>
   )
