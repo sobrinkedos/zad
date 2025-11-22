@@ -14,6 +14,7 @@ export default function Reports() {
   const [municipalityId, setMunicipalityId] = useState<string | undefined>(undefined)
   const [zoneId, setZoneId] = useState<string | undefined>(undefined)
   const [daily, setDaily] = useState<Array<{ date: string; revenue: number; sessions: number; penalties: number }>>([])
+  const [dailyTypes, setDailyTypes] = useState<Array<{ date: string; compras: number; comprasValor: number; usos: number; usosValor: number; estornos: number; estornosValor: number }>>([])
 
   const load = async () => {
     setLoading(true)
@@ -55,11 +56,27 @@ export default function Reports() {
 
       // Daily grouping
       const map: Record<string, { revenue: number; sessions: number; penalties: number }> = {}
+      const typesMap: Record<string, { compras: number; comprasValor: number; usos: number; usosValor: number; estornos: number; estornosValor: number }> = {}
       const keyFn = (d: string) => dayjs(d).format('YYYY-MM-DD')
       revenueList.forEach((t: any) => {
         const k = keyFn(t.created_at)
         map[k] = map[k] || { revenue: 0, sessions: 0, penalties: 0 }
         map[k].revenue += Number(t.valor || 0)
+        typesMap[k] = typesMap[k] || { compras: 0, comprasValor: 0, usos: 0, usosValor: 0, estornos: 0, estornosValor: 0 }
+        typesMap[k].compras += 1
+        typesMap[k].comprasValor += Number(t.valor || 0)
+      })
+      trxData.filter((t: any) => t.tipo === 'uso').forEach((t: any) => {
+        const k = keyFn(t.created_at)
+        typesMap[k] = typesMap[k] || { compras: 0, comprasValor: 0, usos: 0, usosValor: 0, estornos: 0, estornosValor: 0 }
+        typesMap[k].usos += 1
+        typesMap[k].usosValor += Number(t.valor || 0)
+      })
+      trxData.filter((t: any) => t.tipo === 'estorno').forEach((t: any) => {
+        const k = keyFn(t.created_at)
+        typesMap[k] = typesMap[k] || { compras: 0, comprasValor: 0, usos: 0, usosValor: 0, estornos: 0, estornosValor: 0 }
+        typesMap[k].estornos += 1
+        typesMap[k].estornosValor += Number(t.valor || 0)
       })
       sessData.forEach((s: any) => {
         const k = keyFn(s.inicio)
@@ -75,6 +92,10 @@ export default function Reports() {
         .sort((a, b) => a[0].localeCompare(b[0]))
         .map(([date, v]) => ({ date, ...v }))
       setDaily(rows)
+      const typeRows = Object.entries(typesMap)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([date, v]) => ({ date, ...v }))
+      setDailyTypes(typeRows)
     } catch (err: any) {
       const msg = String(err?.message || '')
       if (msg.includes('Abort') || msg.includes('ERR_ABORTED')) return
@@ -130,6 +151,48 @@ export default function Reports() {
     URL.revokeObjectURL(url)
   }
 
+  const exportSessionsCsv = async () => {
+    try {
+      const start = range[0].toISOString()
+      const end = range[1].toISOString()
+      let q = supabase.from('sessions').select('id,user_id,zone_id,inicio,fim,status').gte('inicio', start).lte('inicio', end)
+      if (zoneId) q = q.eq('zone_id', zoneId)
+      const { data } = await q
+      const rows = [['id','user_id','zone_id','inicio','fim','status'], ...((data||[]).map((r:any)=>[r.id, r.user_id, r.zone_id, r.inicio, r.fim, r.status]))]
+      const csv = rows.map(r => r.join(',')).join('\n')
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `sessoes_${range[0].format('YYYYMMDD')}_${range[1].format('YYYYMMDD')}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      message.error('Erro ao exportar sessões')
+    }
+  }
+
+  const exportPenaltiesCsv = async () => {
+    try {
+      const start = range[0].toISOString()
+      const end = range[1].toISOString()
+      let q = supabase.from('penalties').select('id,vehicle_id,zone_id,fiscal_id,valor,motivo,created_at,status').gte('created_at', start).lte('created_at', end)
+      if (zoneId) q = q.eq('zone_id', zoneId)
+      const { data } = await q
+      const rows = [['id','vehicle_id','zone_id','fiscal_id','valor','motivo','created_at','status'], ...((data||[]).map((r:any)=>[r.id, r.vehicle_id, r.zone_id, String(r.valor), r.motivo, r.created_at, r.status]))]
+      const csv = rows.map(r => r.join(',')).join('\n')
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `multas_${range[0].format('YYYYMMDD')}_${range[1].format('YYYYMMDD')}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      message.error('Erro ao exportar multas')
+    }
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -150,6 +213,8 @@ export default function Reports() {
           <Button type="primary" onClick={load} loading={loading}>Atualizar</Button>
           <Button onClick={exportCsv}>Exportar CSV</Button>
           <Button onClick={exportAggregatedCsv}>Exportar CSV (Agregado)</Button>
+          <Button onClick={exportSessionsCsv}>Exportar Sessões</Button>
+          <Button onClick={exportPenaltiesCsv}>Exportar Multas</Button>
         </Space>
       </div>
 
@@ -181,6 +246,23 @@ export default function Reports() {
             { title: 'Arrecadação (R$)', dataIndex: 'revenue', key: 'revenue', render: (v: number) => v.toFixed(2) },
             { title: 'Sessões', dataIndex: 'sessions', key: 'sessions' },
             { title: 'Multas', dataIndex: 'penalties', key: 'penalties' },
+          ]}
+        />
+      </Card>
+
+      <Card style={{ marginTop: 24 }}>
+        <Table
+          dataSource={dailyTypes}
+          rowKey={r => r.date}
+          pagination={false}
+          columns={[
+            { title: 'Data', dataIndex: 'date', key: 'date' },
+            { title: 'Compras (R$)', dataIndex: 'comprasValor', key: 'comprasValor', render: (v: number) => v.toFixed(2) },
+            { title: 'Compras (Qtd)', dataIndex: 'compras', key: 'compras' },
+            { title: 'Usos (R$)', dataIndex: 'usosValor', key: 'usosValor', render: (v: number) => v.toFixed(2) },
+            { title: 'Usos (Qtd)', dataIndex: 'usos', key: 'usos' },
+            { title: 'Estornos (R$)', dataIndex: 'estornosValor', key: 'estornosValor', render: (v: number) => v.toFixed(2) },
+            { title: 'Estornos (Qtd)', dataIndex: 'estornos', key: 'estornos' },
           ]}
         />
       </Card>
