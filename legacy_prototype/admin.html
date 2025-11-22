@@ -215,6 +215,24 @@
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-semibold text-gray-800">Gerenciar Usuários</h3>
                         </div>
+                        <div class="glass-effect rounded-2xl p-6 admin-card mb-4">
+                            <h4 class="text-md font-semibold text-gray-800 mb-2">Criar Usuário</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+                                <select id="userRole" class="px-4 py-3 border border-gray-300 rounded-lg">
+                                    <option value="motorista">Motorista</option>
+                                    <option value="financeiro">Financeiro</option>
+                                </select>
+                                <select id="userMunSelect" class="px-4 py-3 border border-gray-300 rounded-lg"></select>
+                                <input id="userName" class="px-4 py-3 border border-gray-300 rounded-lg" placeholder="Nome">
+                                <input id="userCPF" class="px-4 py-3 border border-gray-300 rounded-lg" placeholder="CPF">
+                                <input id="userEmail" class="px-4 py-3 border border-gray-300 rounded-lg" placeholder="Email">
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+                                <input id="userPassword" type="password" class="px-4 py-3 border border-gray-300 rounded-lg" placeholder="Senha">
+                                <div class="md:col-span-4"></div>
+                            </div>
+                            <button id="createUserBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Criar Usuário</button>
+                        </div>
                         <div id="usersList" class="space-y-3">
                             <!-- Usuários serão carregados aqui -->
                         </div>
@@ -537,6 +555,53 @@
                     document.getElementById('adminDashboard').appendChild(container);
                 }
                 loadPenaltiesSupabase();
+
+                if (!document.getElementById('municipalitiesDynamic')) {
+                    const m = document.createElement('div');
+                    m.id = 'municipalitiesDynamic';
+                    m.className = 'glass-effect rounded-2xl p-6 admin-card mt-6';
+                    m.innerHTML = `
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Prefeituras</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <input id="munName" class="px-4 py-3 border border-gray-300 rounded-lg" placeholder="Nome da Prefeitura">
+                          <input id="munCNPJ" class="px-4 py-3 border border-gray-300 rounded-lg" placeholder="CNPJ">
+                          <input id="munAddr" class="px-4 py-3 border border-gray-300 rounded-lg" placeholder="Endereço">
+                        </div>
+                        <div class="mb-4">
+                          <button id="createMunBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">Criar Prefeitura</button>
+                        </div>
+                        <div class="mt-6">
+                          <h4 class="text-md font-semibold text-gray-800 mb-2">Criar Admin da Prefeitura</h4>
+                          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <select id="munSelect" class="px-4 py-3 border border-gray-300 rounded-lg"></select>
+                            <input id="munAdminName" class="px-4 py-3 border border-gray-300 rounded-lg" placeholder="Nome">
+                            <input id="munAdminCPF" class="px-4 py-3 border border-gray-300 rounded-lg" placeholder="CPF">
+                            <input id="munAdminEmail" class="px-4 py-3 border border-gray-300 rounded-lg" placeholder="Email">
+                          </div>
+                          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <input id="munAdminPassword" type="password" class="px-4 py-3 border border-gray-300 rounded-lg" placeholder="Senha">
+                            <div class="md:col-span-3"></div>
+                          </div>
+                          <button id="createMunAdminBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Criar Admin</button>
+                        </div>
+                        <div class="mt-6">
+                          <h4 class="text-md font-semibold text-gray-800 mb-2">Bootstrap Superadmin</h4>
+                          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <input id="superNome" class="px-4 py-3 border border-gray-300 rounded-lg" placeholder="Nome">
+                            <input id="superCPF" class="px-4 py-3 border border-gray-300 rounded-lg" placeholder="CPF">
+                            <input id="superEmail" class="px-4 py-3 border border-gray-300 rounded-lg" placeholder="Email">
+                            <input id="superPassword" type="password" class="px-4 py-3 border border-gray-300 rounded-lg" placeholder="Senha">
+                          </div>
+                          <button id="bootstrapSuperBtn" class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900">Promover Superadmin</button>
+                        </div>
+                        <div id="municipalitiesList" class="space-y-3"></div>
+                    `;
+                    document.getElementById('adminDashboard').appendChild(m);
+                    document.getElementById('createMunBtn').addEventListener('click', handleCreateMunicipality);
+                    document.getElementById('createMunAdminBtn').addEventListener('click', handleCreateMunicipalityAdmin);
+                    document.getElementById('bootstrapSuperBtn').addEventListener('click', handleBootstrapSuperadmin);
+                }
+                loadMunicipalitiesSupabase();
             } catch (error) {
                 showNotification('Erro ao carregar dados: ' + error.message, 'error');
             }
@@ -689,120 +754,120 @@
             }
         }
 
-        function loadUsers() {
+        async function loadUsers() {
             const usersList = document.getElementById('usersList');
-            const users = db.getAll('users').filter(user => user.tipo === 'motorista');
-
-            usersList.innerHTML = '';
-
-            if (users.length === 0) {
-                usersList.innerHTML = '<p class="text-gray-500 text-center">Nenhum usuário cadastrado</p>';
-                return;
+            usersList.innerHTML = '<p class="text-gray-500">Carregando...</p>';
+            try {
+                const mod = await import('./admin-supabase.js');
+                const accounts = await mod.listAccounts('motorista');
+                usersList.innerHTML = '';
+                if (!accounts.length) {
+                    usersList.innerHTML = '<p class="text-gray-500 text-center">Nenhum usuário cadastrado</p>';
+                    return;
+                }
+                accounts.forEach(user => {
+                    const userCard = document.createElement('div');
+                    userCard.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
+                    userCard.innerHTML = `
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-semibold text-gray-800">${user.nome || user.email}</h4>
+                                <span class="text-blue-600 font-medium">${user.role}</span>
+                            </div>
+                            <p class="text-sm text-gray-600">${user.email || ''}</p>
+                            <div class="flex items-center justify-between text-xs text-gray-500 mt-1">
+                                <span>CPF: ${user.cpf || '-'}</span>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2 ml-4">
+                            <button onclick="viewUser('${user.user_id}')" class="text-blue-600 hover:text-blue-700">
+                                <i data-feather="eye" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    `;
+                    usersList.appendChild(userCard);
+                });
+                feather.replace();
+            } catch (e) {
+                usersList.innerHTML = `<p class='text-red-600'>Erro: ${e.message}</p>`;
             }
-
-            users.forEach(user => {
-                const userCard = document.createElement('div');
-                userCard.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
-                userCard.innerHTML = `
-                    <div class="flex-1">
-                        <div class="flex items-center justify-between mb-2">
-                            <h4 class="font-semibold text-gray-800">${user.nome}</h4>
-                            <span class="text-blue-600 font-medium">${formatCurrency(user.saldo_creditos)}</span>
-                        </div>
-                        <p class="text-sm text-gray-600">${user.email}</p>
-                        <div class="flex items-center justify-between text-xs text-gray-500 mt-1">
-                            <span>CPF: ${user.cpf}</span>
-                            <span>Veículos: ${db.getByField('vehicles', 'user_id', user.id).length}</span>
-                        </div>
-                    </div>
-                    <div class="flex space-x-2 ml-4">
-                        <button onclick="viewUser('${user.id}')" class="text-blue-600 hover:text-blue-700">
-                            <i data-feather="eye" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                `;
-                usersList.appendChild(userCard);
-            });
-
-            feather.replace();
         }
 
-        function loadFiscals() {
+        async function loadFiscals() {
             const fiscalsList = document.getElementById('fiscalsList');
-            const fiscals = db.getAll('users').filter(user => user.tipo === 'fiscal');
-
-            fiscalsList.innerHTML = '';
-
-            if (fiscals.length === 0) {
-                fiscalsList.innerHTML = '<p class="text-gray-500 text-center">Nenhum fiscal cadastrado</p>';
-                return;
-            }
-
-            fiscals.forEach(fiscal => {
-                const fiscalCard = document.createElement('div');
-                fiscalCard.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
-                fiscalCard.innerHTML = `
-                    <div class="flex-1">
-                        <h4 class="font-semibold text-gray-800 mb-1">${fiscal.nome}</h4>
-                        <p class="text-sm text-gray-600">${fiscal.email}</p>
-                        <div class="text-xs text-gray-500 mt-1">
-                            <span>CPF: ${fiscal.cpf}</span>
+            fiscalsList.innerHTML = '<p class="text-gray-500">Carregando...</p>';
+            try {
+                const mod = await import('./admin-supabase.js');
+                const fiscals = await mod.listAccounts('fiscal');
+                fiscalsList.innerHTML = '';
+                if (!fiscals.length) {
+                    fiscalsList.innerHTML = '<p class="text-gray-500 text-center">Nenhum fiscal cadastrado</p>';
+                    return;
+                }
+                fiscals.forEach(fiscal => {
+                    const fiscalCard = document.createElement('div');
+                    fiscalCard.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
+                    fiscalCard.innerHTML = `
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800 mb-1">${fiscal.nome || fiscal.email}</h4>
+                            <p class="text-sm text-gray-600">${fiscal.email || ''}</p>
+                            <div class="text-xs text-gray-500 mt-1">
+                                <span>CPF: ${fiscal.cpf || '-'}</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex space-x-2 ml-4">
-                        <button onclick="editFiscal('${fiscal.id}')" class="text-blue-600 hover:text-blue-700">
-                            <i data-feather="edit-2" class="w-4 h-4"></i>
-                        </button>
-                        <button onclick="deleteFiscal('${fiscal.id}')" class="text-red-600 hover:text-red-700">
-                            <i data-feather="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                `;
-                fiscalsList.appendChild(fiscalCard);
-            });
-
-            feather.replace();
+                        <div class="flex space-x-2 ml-4">
+                            <button onclick="editFiscal('${fiscal.user_id}')" class="text-blue-600 hover:text-blue-700">
+                                <i data-feather="edit-2" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteFiscal('${fiscal.user_id}')" class="text-red-600 hover:text-red-700">
+                                <i data-feather="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    `;
+                    fiscalsList.appendChild(fiscalCard);
+                });
+                feather.replace();
+            } catch (e) {
+                fiscalsList.innerHTML = `<p class='text-red-600'>Erro: ${e.message}</p>`;
+            }
         }
 
-        function loadTransactions() {
+        async function loadTransactions() {
             const transactionsList = document.getElementById('transactionsList');
-            const transactions = db.getAll('transactions').slice(0, 20); // Últimas 20 transações
-
-            transactionsList.innerHTML = '';
-
-            if (transactions.length === 0) {
-                transactionsList.innerHTML = '<p class="text-gray-500 text-center">Nenhuma transação encontrada</p>';
-                return;
+            transactionsList.innerHTML = '<p class="text-gray-500">Carregando...</p>';
+            try {
+                const mod = await import('./admin-supabase.js');
+                const transactions = await mod.listTransactions();
+                transactionsList.innerHTML = '';
+                if (!transactions.length) {
+                    transactionsList.innerHTML = '<p class="text-gray-500 text-center">Nenhuma transação encontrada</p>';
+                    return;
+                }
+                transactions.forEach(transaction => {
+                    const transactionCard = document.createElement('div');
+                    transactionCard.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
+                    const typeColor = transaction.tipo === 'compra' ? 'text-green-600' : transaction.tipo === 'uso' ? 'text-blue-600' : 'text-orange-600';
+                    transactionCard.innerHTML = `
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-semibold text-gray-800 capitalize">${transaction.tipo}</h4>
+                                <span class="font-bold ${typeColor}">${formatCurrency(transaction.valor)}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs text-gray-500 mt-1">
+                                <span>${transaction.metodo_pagamento || ''}</span>
+                                <span>${new Date(transaction.created_at).toLocaleDateString('pt-BR')}</span>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <span class="px-2 py-1 rounded text-xs ${transaction.status === 'concluido' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${transaction.status}</span>
+                        </div>
+                    `;
+                    transactionsList.appendChild(transactionCard);
+                });
+                feather.replace();
+            } catch (e) {
+                transactionsList.innerHTML = `<p class='text-red-600'>Erro: ${e.message}</p>`;
             }
-
-            transactions.forEach(transaction => {
-                const user = db.getById('users', transaction.user_id);
-                const transactionCard = document.createElement('div');
-                transactionCard.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
-                
-                const typeColor = transaction.tipo === 'compra' ? 'text-green-600' : 
-                                 transaction.tipo === 'uso' ? 'text-blue-600' : 'text-orange-600';
-                
-                transactionCard.innerHTML = `
-                    <div class="flex-1">
-                        <div class="flex items-center justify-between mb-2">
-                            <h4 class="font-semibold text-gray-800 capitalize">${transaction.tipo}</h4>
-                            <span class="font-bold ${typeColor}">${formatCurrency(transaction.valor)}</span>
-                        </div>
-                        <p class="text-sm text-gray-600">${user ? user.nome : 'Usuário desconhecido'}</p>
-                        <div class="flex items-center justify-between text-xs text-gray-500 mt-1">
-                            <span>${transaction.metodo_pagamento}</span>
-                            <span>${new Date(transaction.created_at).toLocaleDateString('pt-BR')}</span>
-                        </div>
-                    </div>
-                    <div class="ml-4">
-                        <span class="px-2 py-1 rounded text-xs ${transaction.status === 'concluido' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${transaction.status}</span>
-                    </div>
-                `;
-                transactionsList.appendChild(transactionCard);
-            });
-
-            feather.replace();
         }
 
         async function loadPenaltiesSupabase() {
@@ -844,6 +909,136 @@
                 const mod = await import('./admin-supabase.js');
                 const url = await mod.signEvidence(penaltyId, path);
                 window.open(url, '_blank');
+            } catch (e) {
+                showNotification(e.message, 'error');
+            }
+        }
+
+        async function loadMunicipalitiesSupabase() {
+            const list = document.getElementById('municipalitiesList');
+            if (!list) return;
+            list.innerHTML = '<p class="text-gray-500">Carregando...</p>';
+            try {
+                const mod = await import('./admin-supabase.js');
+                const items = await mod.listMunicipalities();
+                list.innerHTML = '';
+                const sel = document.getElementById('munSelect');
+                if (sel) {
+                    sel.innerHTML = '';
+                    items.forEach(m => {
+                        const opt = document.createElement('option');
+                        opt.value = m.id;
+                        opt.textContent = m.nome;
+                        sel.appendChild(opt);
+                    });
+                }
+                if (!items.length) {
+                    list.innerHTML = '<p class="text-gray-500 text-center">Nenhuma prefeitura cadastrada</p>';
+                    return;
+                }
+                items.forEach(m => {
+                    const card = document.createElement('div');
+                    card.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
+                    card.innerHTML = `
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800 mb-1">${m.nome}</h4>
+                            <div class="text-sm text-gray-600">${m.endereco || ''}</div>
+                            <div class="text-xs text-gray-500 mt-1">CNPJ: ${m.cnpj || '-'}</div>
+                        </div>
+                        <div class="ml-4">
+                            <span class="px-2 py-1 rounded text-xs ${m.status === 'ativo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${m.status}</span>
+                        </div>
+                    `;
+                    list.appendChild(card);
+                });
+                const userSel = document.getElementById('userMunSelect');
+                if (userSel) {
+                    userSel.innerHTML = '';
+                    items.forEach(m => {
+                        const opt = document.createElement('option');
+                        opt.value = m.id;
+                        opt.textContent = m.nome;
+                        userSel.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                list.innerHTML = `<p class='text-red-600'>Erro: ${e.message}</p>`;
+            }
+        }
+
+        async function handleCreateMunicipality() {
+            const nome = document.getElementById('munName').value;
+            const cnpj = document.getElementById('munCNPJ').value;
+            const endereco = document.getElementById('munAddr').value;
+            if (!nome) {
+                showNotification('Informe o nome da prefeitura', 'error');
+                return;
+            }
+            try {
+                const mod = await import('./admin-supabase.js');
+                await mod.createMunicipality({ nome, cnpj, endereco });
+                showNotification('Prefeitura criada com sucesso!', 'success');
+                loadMunicipalitiesSupabase();
+            } catch (e) {
+                showNotification(e.message, 'error');
+            }
+        }
+
+        document.addEventListener('click', async (e) => {
+            if (e.target && e.target.id === 'createUserBtn') {
+                const role = document.getElementById('userRole').value;
+                const municipality_id = document.getElementById('userMunSelect').value;
+                const nome = document.getElementById('userName').value;
+                const cpf = document.getElementById('userCPF').value.replace(/[^\d]/g, '');
+                const email = document.getElementById('userEmail').value;
+                const password = document.getElementById('userPassword').value;
+                if (!municipality_id || !email || !password) {
+                    showNotification('Informe prefeitura, email e senha', 'error');
+                    return;
+                }
+                try {
+                    const mod = await import('./admin-supabase.js');
+                    await mod.adminCreateUser({ email, password, role, municipality_id, nome, cpf });
+                    showNotification('Usuário criado com sucesso!', 'success');
+                    loadUsers();
+                } catch (err) {
+                    showNotification(err.message, 'error');
+                }
+            }
+        });
+
+        async function handleCreateMunicipalityAdmin() {
+            const municipality_id = document.getElementById('munSelect').value;
+            const nome = document.getElementById('munAdminName').value;
+            const cpf = document.getElementById('munAdminCPF').value.replace(/[^\d]/g, '');
+            const email = document.getElementById('munAdminEmail').value;
+            const password = document.getElementById('munAdminPassword').value;
+            if (!municipality_id || !email || !password) {
+                showNotification('Informe prefeitura, email e senha', 'error');
+                return;
+            }
+            try {
+                const mod = await import('./admin-supabase.js');
+                await mod.adminCreateUser({ email, password, role: 'admin', municipality_id, nome, cpf });
+                showNotification('Admin criado com sucesso!', 'success');
+            } catch (e) {
+                showNotification(e.message, 'error');
+            }
+        }
+
+        async function handleBootstrapSuperadmin() {
+            const nome = document.getElementById('superNome').value;
+            const cpf = document.getElementById('superCPF').value.replace(/[^\d]/g, '');
+            const email = document.getElementById('superEmail').value;
+            const password = document.getElementById('superPassword').value;
+            if (!email || !password) {
+                showNotification('Informe email e senha', 'error');
+                return;
+            }
+            try {
+                const mod = await import('./admin-supabase.js');
+                await mod.bootstrapSuperadmin({ email, password, nome, cpf });
+                showNotification('Superadmin promovido/criado com sucesso!', 'success');
             } catch (e) {
                 showNotification(e.message, 'error');
             }
@@ -966,23 +1161,20 @@
         }
 
         async function handleSaveFiscal() {
-            const fiscalData = {
-                nome: document.getElementById('fiscalName').value,
-                cpf: document.getElementById('fiscalCPF').value.replace(/[^\d]/g, ''),
-                email: document.getElementById('fiscalEmail').value,
-                senha: 'fiscal123', // Senha padrão
-                telefone: '(00) 00000-0000',
-                tipo: 'fiscal'
-            };
+            const nome = document.getElementById('fiscalName').value;
+            const cpf = document.getElementById('fiscalCPF').value.replace(/[^\d]/g, '');
+            const email = document.getElementById('fiscalEmail').value;
+            const password = 'fiscal123';
+            const municipality_id = (document.getElementById('munSelect') && document.getElementById('munSelect').value) || null;
 
-            // Validar CPF
-            if (!validateCPF(fiscalData.cpf)) {
+            if (!validateCPF(cpf)) {
                 showNotification('CPF inválido', 'error');
                 return;
             }
 
             try {
-                db.create('users', fiscalData);
+                const mod = await import('./admin-supabase.js');
+                await mod.adminCreateUser({ email, password, role: 'fiscal', municipality_id, nome, cpf });
                 hideFiscalModal();
                 loadFiscals();
                 showNotification('Fiscal cadastrado com sucesso!', 'success');
