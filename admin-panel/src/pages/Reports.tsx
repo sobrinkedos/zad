@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Card, Row, Col, Statistic, DatePicker, Space, Button, message, Select, Table } from 'antd'
+import { Card, Row, Col, Statistic, DatePicker, Space, Button, message, Select, Table, Dropdown } from 'antd'
 import dayjs from 'dayjs'
 import { supabase } from '../lib/supabase'
 
@@ -197,25 +197,41 @@ export default function Reports() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h1 style={{ fontSize: 24, fontWeight: 'bold', margin: 0 }}>Relatórios</h1>
-        <Space>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
           <DatePicker.RangePicker
             value={range}
             onChange={(v) => { if (v && v[0] && v[1]) setRange([v[0], v[1]]) }}
             showTime
             format="YYYY-MM-DD HH:mm"
+            size="small"
+            style={{ minWidth: 260, flex: '1 1 280px' }}
           />
-          <Select allowClear placeholder="Município" value={municipalityId} onChange={setMunicipalityId} style={{ minWidth: 220 }} showSearch filterOption={(input, option) => (option?.children as string).toLowerCase().includes(input.toLowerCase())}>
+          <Select allowClear placeholder="Município" value={municipalityId} onChange={setMunicipalityId} size="small" style={{ minWidth: 200, flex: '1 1 220px' }} showSearch filterOption={(input, option) => (option?.children as string).toLowerCase().includes(input.toLowerCase())}>
             {municipalities.map(m => (<Select.Option key={m.id} value={m.id}>{m.nome}</Select.Option>))}
           </Select>
-          <Select allowClear placeholder="Zona" value={zoneId} onChange={setZoneId} style={{ minWidth: 220 }} showSearch filterOption={(input, option) => (option?.children as string).toLowerCase().includes(input.toLowerCase())}>
+          <Select allowClear placeholder="Zona" value={zoneId} onChange={setZoneId} size="small" style={{ minWidth: 200, flex: '1 1 220px' }} showSearch filterOption={(input, option) => (option?.children as string).toLowerCase().includes(input.toLowerCase())}>
             {zones.map(z => (<Select.Option key={z.id} value={z.id}>{z.nome}</Select.Option>))}
           </Select>
-          <Button type="primary" onClick={load} loading={loading}>Atualizar</Button>
-          <Button onClick={exportCsv}>Exportar CSV</Button>
-          <Button onClick={exportAggregatedCsv}>Exportar CSV (Agregado)</Button>
-          <Button onClick={exportSessionsCsv}>Exportar Sessões</Button>
-          <Button onClick={exportPenaltiesCsv}>Exportar Multas</Button>
-        </Space>
+          <Button type="primary" size="small" onClick={load} loading={loading}>Atualizar</Button>
+          <Dropdown
+            menu={{
+              items: [
+                { key: 'csv', label: 'Exportar CSV' },
+                { key: 'csv-agregado', label: 'Exportar CSV (Agregado)' },
+                { key: 'sess', label: 'Exportar Sessões' },
+                { key: 'mult', label: 'Exportar Multas' },
+              ],
+              onClick: ({ key }) => {
+                if (key === 'csv') return exportCsv()
+                if (key === 'csv-agregado') return exportAggregatedCsv()
+                if (key === 'sess') return exportSessionsCsv()
+                if (key === 'mult') return exportPenaltiesCsv()
+              }
+            }}
+          >
+            <Button size="small">Exportar</Button>
+          </Dropdown>
+        </div>
       </div>
 
       <Row gutter={16}>
