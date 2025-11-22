@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
     Table,
     Button,
@@ -15,6 +15,16 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import type { ColumnsType } from 'antd/es/table';
 import { supabase } from '../lib/supabase';
 import dayjs from 'dayjs';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+const markerIcon = new L.Icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+});
 
 interface Zone {
     id: string;
@@ -26,6 +36,8 @@ interface Zone {
     status: string; // 'ativa' | 'inativa'
     vagas: number;
     tolerancia_minutos: number;
+    lat?: number | null;
+    lng?: number | null;
 }
 
 const STATUS_OPTIONS = [
@@ -40,6 +52,49 @@ export default function Zones() {
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [editingZone, setEditingZone] = useState<Zone | null>(null);
     const [form] = Form.useForm();
+    const [mapOpen, setMapOpen] = useState<boolean>(false);
+    const [mapPos, setMapPos] = useState<{ lat: number; lng: number } | null>(null);
+    const mapRef = useRef<any>(null);
+    const markerRef = useRef<any>(null);
+
+    useEffect(() => {
+        if (mapOpen) {
+            const center = mapPos || { lat: -23.5505, lng: -46.6333 };
+            if (!mapRef.current) {
+                const map = L.map('zones-map').setView([center.lat, center.lng], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors',
+                }).addTo(map);
+                map.on('click', (e: any) => {
+                    const { lat, lng } = e.latlng;
+                    setMapPos({ lat, lng });
+                    form.setFieldsValue({ lat, lng });
+                    if (markerRef.current) {
+                        markerRef.current.setLatLng(e.latlng);
+                    } else {
+                        markerRef.current = L.marker(e.latlng, { icon: markerIcon }).addTo(map);
+                    }
+                });
+                mapRef.current = map;
+            } else {
+                mapRef.current.setView([center.lat, center.lng], 13);
+            }
+            if (mapPos) {
+                const ll = L.latLng(mapPos.lat, mapPos.lng);
+                if (markerRef.current) {
+                    markerRef.current.setLatLng(ll);
+                } else if (mapRef.current) {
+                    markerRef.current = L.marker(ll, { icon: markerIcon }).addTo(mapRef.current);
+                }
+            }
+        } else {
+            if (mapRef.current) {
+                mapRef.current.remove();
+                mapRef.current = null;
+                markerRef.current = null;
+            }
+        }
+    }, [mapOpen]);
 
     // ---------- Data loading ----------
     const loadZones = async () => {
@@ -49,14 +104,17 @@ export default function Zones() {
             if (error) throw error;
             setZones(data as Zone[]);
         } catch (err: any) {
-            message.error('Erro ao carregar zonas: ' + err.message);
+            const msg = String(err?.message || '');
+            if (msg.includes('Abort') || msg.includes('ERR_ABORTED')) return;
+            message.error('Erro ao carregar zonas: ' + msg);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        loadZones();
+        const t = setTimeout(() => { loadZones(); }, 500);
+        return () => clearTimeout(t);
     }, []);
 
     // ---------- Handlers ----------
@@ -70,6 +128,7 @@ export default function Zones() {
             horario_inicio: dayjs('08:00', 'HH:mm'),
             horario_fim: dayjs('18:00', 'HH:mm'),
         });
+        setMapPos({ lat: -23.5505, lng: -46.6333 });
         setIsModalOpen(true);
     };
 
@@ -80,6 +139,7 @@ export default function Zones() {
             horario_inicio: dayjs(zone.horario_inicio, 'HH:mm:ss'),
             horario_fim: dayjs(zone.horario_fim, 'HH:mm:ss'),
         });
+        if (zone.lat && zone.lng) setMapPos({ lat: zone.lat, lng: zone.lng });
         setIsModalOpen(true);
     };
 
@@ -114,6 +174,8 @@ export default function Zones() {
                 status: values.status ?? 'ativa',
                 tolerancia_minutos: values.tolerancia_minutos ?? 5,
                 vagas: values.vagas ?? 50,
+                lat: values.lat ?? mapPos?.lat ?? null,
+                lng: values.lng ?? mapPos?.lng ?? null,
             };
 
             if (editingZone) {
@@ -201,12 +263,13 @@ export default function Zones() {
                 onCancel={() => {
                     setIsModalOpen(false);
                     form.resetFields();
+                    setMapOpen(false);
                 }}
                 footer={null}
                 width={600}
             >
                 <Form form={form} layout="vertical" onFinish={handleSubmit}>
-                    <Form.Item name="nome" label="Nome da Zona" rules={[{ required: true, message: 'Digite o nome' }]}>
+                    <Form.Item name="nome" label="Nome da Zona" rules={[{ required: true, message: 'Digite o nome' }]}>                
                         <Input placeholder="Ex: Centro" />
                     </Form.Item>
 
@@ -236,7 +299,7 @@ export default function Zones() {
                         </Form.Item>
                     </Space>
 
-                    <Form.Item name="status" label="Status" rules={[{ required: true, message: 'Selecione o status' }]}>
+                    <Form.Item name="status" label="Status" rules={[{ required: true, message: 'Selecione o status' }]}>            
                         <Select>
                             {STATUS_OPTIONS.map(opt => (
                                 <Select.Option key={opt.value} value={opt.value}>
@@ -245,6 +308,25 @@ export default function Zones() {
                             ))}
                         </Select>
                     </Form.Item>
+
+                    <Space style={{ width: '100%', marginBottom: 12 }}>
+                        <Button onClick={() => setMapOpen(v => !v)}>
+                            {mapOpen ? 'Ocultar Mapa' : 'Selecionar no Mapa'}
+                        </Button>
+                    </Space>
+
+                    <Space style={{ width: '100%' }} size="large">
+                        <Form.Item name="lat" label="Latitude">
+                            <InputNumber style={{ width: '100%' }} step={0.0001} placeholder="Ex: -23.5505" />
+                        </Form.Item>
+                        <Form.Item name="lng" label="Longitude">
+                            <InputNumber style={{ width: '100%' }} step={0.0001} placeholder="Ex: -46.6333" />
+                        </Form.Item>
+                    </Space>
+
+                    {mapOpen && (
+                        <div id="zones-map" style={{ height: 300, marginBottom: 16 }} />
+                    )}
 
                     <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
                         <Space style={{ width: '100%', justifyContent: 'flex-end' }}>

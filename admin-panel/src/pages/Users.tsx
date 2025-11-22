@@ -8,8 +8,9 @@ import {
     Select,
     message,
     Button,
+    Input,
 } from 'antd';
-import { Edit, Shield } from 'lucide-react';
+import { Edit, Shield, UserPlus } from 'lucide-react';
 import type { ColumnsType } from 'antd/es/table';
 import { supabase } from '../lib/supabase';
 
@@ -36,8 +37,10 @@ export default function Users() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [form] = Form.useForm();
+    const [createForm] = Form.useForm();
 
     // ---------- Data loading ----------
     const loadUsers = async () => {
@@ -47,14 +50,17 @@ export default function Users() {
             if (error) throw error;
             setUsers(data as User[]);
         } catch (err: any) {
-            message.error('Erro ao carregar usuários: ' + err.message);
+            const msg = String(err?.message || '');
+            if (msg.includes('Abort') || msg.includes('ERR_ABORTED')) return;
+            message.error('Erro ao carregar usuários: ' + msg);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        loadUsers();
+        const t = setTimeout(() => { loadUsers(); }, 500);
+        return () => clearTimeout(t);
     }, []);
 
     // ---------- Handlers ----------
@@ -79,6 +85,28 @@ export default function Users() {
             message.error('Erro ao atualizar perfil: ' + err.message);
         }
     };
+
+    const handleCreate = async (values: any) => {
+        try {
+            const { error } = await supabase.functions.invoke('admin-create-user', {
+                body: {
+                    email: values.email,
+                    password: values.password,
+                    role: values.role,
+                    nome: values.nome,
+                    cpf: values.cpf,
+                    municipality_id: values.municipality_id || null,
+                }
+            })
+            if (error) throw error
+            message.success('Usuário criado com sucesso!')
+            setIsCreateOpen(false)
+            createForm.resetFields()
+            loadUsers()
+        } catch (err: any) {
+            message.error('Erro ao criar usuário: ' + err.message)
+        }
+    }
 
     const getRoleConfig = (role: string) =>
         ROLES.find(r => r.value === role) || { label: role, color: 'default' };
@@ -148,9 +176,10 @@ export default function Users() {
                     marginBottom: 24,
                 }}
             >
-                <h1 style={{ fontSize: 24, fontWeight: 'bold', margin: 0 }}>
-                    Gestão de Usuários
-                </h1>
+                <h1 style={{ fontSize: 24, fontWeight: 'bold', margin: 0 }}>Gestão de Usuários</h1>
+                <Button type="primary" icon={<UserPlus size={16} />} onClick={() => setIsCreateOpen(true)}>
+                    Criar Usuário
+                </Button>
                 <div style={{ display: 'flex', gap: 8 }}>
                     {ROLES.map(role => (
                         <Tag key={role.value} color={role.color}>
@@ -248,6 +277,59 @@ export default function Users() {
                             <Button type="primary" htmlType="submit">
                                 Confirmar Alteração
                             </Button>
+                        </Space>
+                    </Form.Item>
+                </Form>
+            </Modal>
+
+            {/* Create user modal */}
+            <Modal
+                title={
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <UserPlus size={20} />
+                        <span>Criar Usuário</span>
+                    </div>
+                }
+                open={isCreateOpen}
+                onCancel={() => {
+                    setIsCreateOpen(false);
+                    createForm.resetFields();
+                }}
+                footer={null}
+                width={520}
+            >
+                <Form form={createForm} layout="vertical" onFinish={handleCreate}>
+                    <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>                    
+                        <Input placeholder="email@exemplo.com" />
+                    </Form.Item>
+                    <Form.Item name="password" label="Senha" rules={[{ required: true, min: 6 }]}>                   
+                        <Input.Password placeholder="Senha temporária" />
+                    </Form.Item>
+                    <Form.Item name="nome" label="Nome">                                           
+                        <Input placeholder="Nome completo" />
+                    </Form.Item>
+                    <Form.Item name="cpf" label="CPF">                                             
+                        <Input placeholder="CPF" />
+                    </Form.Item>
+                    <Form.Item name="municipality_id" label="Município (opcional)">               
+                        <Input placeholder="UUID do município" />
+                    </Form.Item>
+                    <Form.Item name="role" label="Perfil" rules={[{ required: true }]}>           
+                        <Select size="large">
+                            {ROLES.map(role => (
+                                <Select.Option key={role.value} value={role.value}>
+                                    <Tag color={role.color} style={{ marginRight: 8 }}>
+                                        {role.label}
+                                    </Tag>
+                                </Select.Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+
+                    <Form.Item style={{ marginBottom: 0, marginTop: 12 }}>
+                        <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+                            <Button onClick={() => { setIsCreateOpen(false); createForm.resetFields(); }}>Cancelar</Button>
+                            <Button type="primary" htmlType="submit">Criar</Button>
                         </Space>
                     </Form.Item>
                 </Form>

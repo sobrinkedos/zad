@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { Form, Input, Button, Card, Typography } from 'antd'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Form, Input, Button, Card, Typography, message } from 'antd'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Lock, Mail } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
@@ -9,19 +9,30 @@ const { Title, Text } = Typography
 export default function Login() {
     const [loading, setLoading] = useState(false)
     const navigate = useNavigate()
+    const location = useLocation()
+
+    useEffect(() => {
+        const reason = new URLSearchParams(location.search).get('reason')
+        if (reason === 'unauthorized') {
+            message.warning('Acesso restrito: é necessário perfil Admin ou Superadmin')
+        }
+    }, [location.search])
 
     const onFinish = async (values: { email: string; password: string }) => {
         setLoading(true)
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { error } = await supabase.auth.signInWithPassword({
                 email: values.email,
                 password: values.password
             })
 
             if (error) throw error
-
-            // Verificar se o usuário tem role de admin
-            // Por enquanto, qualquer login válido pode acessar
+            const { data } = await supabase.auth.getUser()
+            const role = (data.user?.app_metadata as any)?.app_role || (data.user?.user_metadata as any)?.app_role
+            if (role !== 'admin' && role !== 'superadmin') {
+                message.error('Seu perfil não possui acesso ao Painel Administrativo')
+                return
+            }
             navigate('/')
         } catch (error: any) {
             console.error('Erro ao fazer login:', error)

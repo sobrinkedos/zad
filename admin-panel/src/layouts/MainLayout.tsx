@@ -11,6 +11,7 @@ export default function MainLayout() {
     const navigate = useNavigate()
     const location = useLocation()
     const [displayName, setDisplayName] = useState('')
+    const [ready, setReady] = useState(false)
 
     useEffect(() => {
         const check = async () => {
@@ -18,19 +19,22 @@ export default function MainLayout() {
             const user = data.session?.user
             if (!user) {
                 navigate('/login')
+                setReady(false)
                 return
             }
             const role = (user.app_metadata as any)?.app_role || (user.user_metadata as any)?.app_role
             if (role !== 'admin' && role !== 'superadmin') {
-                navigate('/login')
+                navigate('/login?reason=unauthorized')
+                setReady(false)
                 return
             }
             const nome = (user.user_metadata as any)?.nome
             setDisplayName(nome ? String(nome) : role)
+            setReady(true)
         }
         check()
-        const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
-            if (!session) navigate('/login')
+        const { data: sub } = supabase.auth.onAuthStateChange(() => {
+            check()
         })
         return () => { sub.subscription.unsubscribe() }
     }, [navigate])
@@ -105,7 +109,7 @@ export default function MainLayout() {
                 </Header>
 
                 <Content style={{ margin: '24px 16px', padding: 24, background: '#fff' }}>
-                    <Outlet />
+                    {ready ? <Outlet /> : <div>Carregando...</div>}
                 </Content>
             </Layout>
         </Layout>
