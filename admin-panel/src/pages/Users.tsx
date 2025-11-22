@@ -11,6 +11,7 @@ import {
     Input,
 } from 'antd';
 import { Edit, Shield, UserPlus } from 'lucide-react';
+import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import { supabase } from '../lib/supabase';
 
@@ -164,7 +165,7 @@ export default function Users() {
             title: 'Cadastro',
             dataIndex: 'created_at',
             key: 'created_at',
-            render: date => new Date(date).toLocaleDateString('pt-BR'),
+            render: (date: string) => dayjs(date).format('DD/MM/YYYY HH:mm'),
         },
         {
             title: 'Ações',
