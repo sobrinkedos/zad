@@ -7,6 +7,7 @@ import Zones from './pages/Zones'
 import Users from './pages/Users'
 import Login from './pages/Login'
 import Reports from './pages/Reports'
+import Municipalities from './pages/Municipalities'
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<MainLayout />}>
             <Route index element={<Dashboard />} />
+            <Route path="municipalities" element={<Municipalities />} />
             <Route path="zones" element={<Zones />} />
             <Route path="users" element={<Users />} />
             <Route path="reports" element={<Reports />} />

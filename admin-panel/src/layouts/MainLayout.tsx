@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Layout, Menu } from 'antd'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, MapPin, Users, FileText, LogOut } from 'lucide-react'
+import { LayoutDashboard, MapPin, Users, FileText, LogOut, Building2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 const { Header, Sider, Content } = Layout
@@ -15,22 +15,29 @@ export default function MainLayout() {
 
     useEffect(() => {
         const check = async () => {
-            const { data } = await supabase.auth.getSession()
-            const user = data.session?.user
-            if (!user) {
-                navigate('/login')
+            try {
+                const { data } = await supabase.auth.getSession()
+                const user = data.session?.user
+                if (!user) {
+                    navigate('/login')
+                    setReady(false)
+                    return
+                }
+                const role = (user.app_metadata as any)?.app_role || (user.user_metadata as any)?.app_role
+                if (role !== 'admin' && role !== 'superadmin') {
+                    navigate('/login?reason=unauthorized')
+                    setReady(false)
+                    return
+                }
+                const nome = (user.user_metadata as any)?.nome
+                setDisplayName(nome ? String(nome) : role)
+                setReady(true)
+            } catch (err: any) {
+                const msg = String(err?.message || '')
+                if (msg.includes('Abort') || msg.includes('ERR_ABORTED')) return
+                navigate('/login?reason=env')
                 setReady(false)
-                return
             }
-            const role = (user.app_metadata as any)?.app_role || (user.user_metadata as any)?.app_role
-            if (role !== 'admin' && role !== 'superadmin') {
-                navigate('/login?reason=unauthorized')
-                setReady(false)
-                return
-            }
-            const nome = (user.user_metadata as any)?.nome
-            setDisplayName(nome ? String(nome) : role)
-            setReady(true)
         }
         check()
         const { data: sub } = supabase.auth.onAuthStateChange(() => {
@@ -44,6 +51,11 @@ export default function MainLayout() {
             key: '/',
             icon: <LayoutDashboard size={18} />,
             label: 'Dashboard'
+        },
+        {
+            key: '/municipalities',
+            icon: <Building2 size={18} />,
+            label: 'Prefeituras'
         },
         {
             key: '/zones',

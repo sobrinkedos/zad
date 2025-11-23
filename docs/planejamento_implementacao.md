@@ -6,8 +6,8 @@ Este documento define o cronograma e as tarefas para a implementação completa 
 
 | Fase | Componente | Descrição | Status | Estimativa |
 |---|---|---|---|---|
-| **1** | **Fundação & Web Motorista** | Estrutura base, Supabase e Web App para motoristas (Vue 3). | 🟡 Em Andamento | Semanas 1-2 |
-| **2** | **Painel Administrativo** | Sistema Web (React) para Prefeitura e Gestão de Frotas. | 🔴 Não Iniciado | Semanas 3-5 |
+| **1** | **Fundação & Web Motorista** | Estrutura base, Supabase e Web App para motoristas (Vue 3). | � Concluído | Semanas 1-2 |
+| **2** | **Painel Administrativo** | Sistema Web (React) para Prefeitura e Gestão de Frotas. | � Concluído | Semanas 3-5 |
 | **3** | **App Motorista (Native)** | App Mobile (React Native) para motoristas. | 🔴 Não Iniciado | Semanas 6-8 |
 | **4** | **App Fiscal (Native)** | App Mobile (React Native) para fiscais com OCR. | 🔴 Não Iniciado | Semanas 8-10 |
 | **5** | **Integração & Polimento** | Pagamentos reais, notificações push, testes de carga. | 🔴 Não Iniciado | Semanas 11-12 |
@@ -32,19 +32,19 @@ Este documento define o cronograma e as tarefas para a implementação completa 
 ### Fase 2: Painel Administrativo (React)
 *Foco: Gestão do sistema pela Prefeitura e Frotas.*
 
-- [ ] **Setup do Projeto**
-    - [ ] Criar projeto `admin-panel` (React + Vite + TypeScript).
-    - [ ] Configurar UI Kit (Ant Design ou Tailwind).
-    - [ ] Configurar Rotas e Autenticação (Role-based: Admin, Frota).
-- [ ] **Gestão de Zonas (Prefeitura)**
-    - [ ] CRUD de Zonas (Nome, Valor/Hora, Horários).
-    - [ ] Visualização de Zonas no Mapa.
-- [ ] **Gestão de Usuários**
-    - [ ] Cadastro de Fiscais.
-    - [ ] Gestão de Empresas de Frota.
-- [ ] **Relatórios & Financeiro**
-    - [ ] Dashboard de Arrecadação em Tempo Real.
-    - [ ] Histórico de Sessões e Multas.
+- [x] **Setup do Projeto**
+    - [x] Criar projeto `admin-panel` (React + Vite + TypeScript).
+    - [x] Configurar UI Kit (Ant Design ou Tailwind).
+    - [x] Configurar Rotas e Autenticação (Role-based: Admin, Frota).
+- [x] **Gestão de Zonas (Prefeitura)**
+    - [x] CRUD de Zonas (Nome, Valor/Hora, Horários).
+    - [x] Visualização de Zonas no Mapa.
+- [x] **Gestão de Usuários**
+    - [x] Cadastro de Fiscais.
+    - [x] Gestão de Empresas de Frota.
+- [x] **Relatórios & Financeiro**
+    - [x] Dashboard de Arrecadação em Tempo Real.
+    - [x] Histórico de Sessões e Multas.
 
 ### Fase 3: App Motorista (React Native)
 *Foco: Experiência nativa para o cidadão.*
@@ -84,6 +84,6 @@ Este documento define o cronograma e as tarefas para a implementação completa 
 
 ## 📝 Próximos Passos Imediatos
 
-1.  Criar o projeto **Painel Administrativo** em React.
-2.  Definir a estrutura de dados para **Zonas** e **Tarifas** no Supabase.
-3.  Implementar o CRUD de Zonas no Painel.
+1.  Criar projeto `mobile-driver` (Expo + React Native).
+2.  Configurar Navegação e Estilos (NativeBase ou Tamagui).
+3.  Portar funcionalidades básicas (Login, Carteira, Veículos) do web app para o mobile.

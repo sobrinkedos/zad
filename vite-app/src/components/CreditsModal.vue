@@ -65,7 +65,7 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
 
-const props = defineProps<{
+defineProps<{
   modelValue: boolean
 }>()
 

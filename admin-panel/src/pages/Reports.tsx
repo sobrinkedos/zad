@@ -125,8 +125,8 @@ export default function Reports() {
         .select('created_at, tipo, valor')
         .gte('created_at', start)
         .lte('created_at', end)
-      const rows = [['created_at','tipo','valor'], ...((data||[]).map((r:any)=>[r.created_at, r.tipo, String(r.valor)]))]
-      const csv = rows.map(r => r.map(x => '"' + String(x).replace(/"/g,'""') + '"').join(',')).join('\n')
+      const rows: string[][] = [['created_at','tipo','valor'], ...((data||[]).map((r:any)=>[r.created_at, r.tipo, String(r.valor)]))]
+      const csv = rows.map((r: string[]) => r.map((x: string) => '"' + String(x).replace(/"/g,'""') + '"').join(',')).join('\n')
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
