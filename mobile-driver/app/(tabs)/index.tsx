@@ -6,6 +6,8 @@ import { Zone, Vehicle } from '../../lib/types'
 import { useAuth } from '../../context/auth'
 import { IconSymbol } from '@/components/ui/icon-symbol'
 import { useRouter } from 'expo-router'
+import { APP_VERSION } from '../../app/version'
+import { useThemeMode } from '../../app/theme/ThemeContext'
 
 interface ActiveSession {
   id: string
@@ -31,6 +33,7 @@ export default function HomeScreen() {
   const [balance, setBalance] = useState<number>(0)
   const [creatingSession, setCreatingSession] = useState(false)
   const [timeLeft, setTimeLeft] = useState<string>('')
+  const { isDarkMode, toggleTheme } = useThemeMode()
 
   const loadData = async () => {
     setLoading(true)
@@ -301,8 +304,13 @@ export default function HomeScreen() {
   const estimatedCost = selectedZone ? selectedZone.valor_hora * duration : 0
 
   return (
-    <View flex={1} backgroundColor="$background" padding="$4" paddingTop="$8">
-      <Text fontSize="$8" fontWeight="bold" marginBottom="$4">Estacionar</Text>
+    <View flex={1} backgroundColor={isDarkMode ? "$black" : "$background"} padding="$4" paddingTop="$8">
+      <View flexDirection="row" justifyContent="space-between" alignItems="center" marginBottom="$4">
+        <Text fontSize="$8" fontWeight="bold" color={isDarkMode ? "white" : "black"}>Estacionar</Text>
+        <Button size="$2" backgroundColor="transparent" onPress={toggleTheme} chromeless>
+          <Text fontSize="$4">{isDarkMode ? "🌙" : "☀️"}</Text>
+        </Button>
+      </View>
 
       {loading && !refreshing ? (
         <View flex={1} justifyContent="center" alignItems="center">
